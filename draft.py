@@ -366,35 +366,7 @@ def polyvalnd(M,X):
 
         evaluation=np.polynomial.polynomial.polyval(X[len(X)-1],N)
     return evaluation
-def hansen_hengupta(x_teld,A,b,x,z):   
-    """
-    It returns the output of Hansen Hengupta operator
-    A=[[ft.arb(2,1),ft.arb(0,1),ft.arb(0,1)],[ft.arb(0,1),ft.arb(3,1),ft.arb(0,1)],[ft.arb(0,1),ft.arb(0,1),ft.arb(4,1)]]
-    b=[ft.arb(4,1),ft.arb(6,1),ft.arb(5,1)]
-    x=[ft.arb(0,1),ft.arb(0,1.5),ft.arb(0,1),ft.arb(1,1),ft.arb(0,1)]
-    z=[ft.arb(1,0.1),ft.arb(1,0.5),ft.arb(0,1),ft.arb(1,1),ft.arb(0,1)]
-    b=[ft.arb(0,0.1),ft.arb(0,0.1),ft.arb(0,0.1),ft.arb(0,0.1),ft.arb(0,0.1)]
-    x_teld=[0.01,0.01,0.01,1.01,0.01]
-    >>> hansen_hengupta(x_teld,A,b,x,x)
-    [ft.arb(0.0100000000000000 +/- 2.10e-19,0.100000000558794 +/- 4.56e-16), ft.arb(0.0100000000000000 +/- 2.10e-19,0.715100008994341 +/- 1.04e-16),ft.arb(0.0100000000000000 +/- 2.10e-19,0.0500000002793968 +/- 2.77e-17),ft.arb(1.01000000000000 +/- 9.0e-18,0.0500000002793968 +/- 2.77e-17),ft.arb(0.0100000000000000 +/- 2.10e-19,0.126582279801369 +/- 2.87e-16)]
-    >>> hansen_hengupta(x_teld,A,b,z,z)
-    'empty'
-    """
-    x_prime=[]
-    z_prime=[]
-    b_prime=[-bi for bi in b]
-    for i in range(len(x)):
-      x_prime.append(x[i]-x_teld[i])
-      z_prime.append(z[i]-x_teld[i])
-                           
-    #x_prime=[xi-x_teldi for xi, x_teldi in zip(x,x_teld)]
-    #z_prime=[zi-x_teldi for zi,x_teldi in zip(z,x_teld)]
-    Gamma=gauss_seidel_dimn(A,b_prime,x_prime,z_prime)
-    if Gamma!= 'empty':
-        Answer=[x + y for x, y in zip(Gamma, x_teld)] #x_teld is a list of float A is a list of list of intervals, b,x,z list of interval
-    else:
-        Answer =Gamma
-    return Gamma
+
 def gauss_seidel_dim1(a,b,x):
     Answer=x
     if 0 not in (a * ft.arb(1)):
@@ -406,7 +378,7 @@ def gauss_seidel_dim1(a,b,x):
 
         Answer=special_cases_gauss_seidel(a,b,x)
     return Answer
-def gauss_seidel_dimn(A,b,x,z): #A,b,x,z=lists (matrix) of ft.arb
+def gauss_seidel_dimnorigin(A,b,x,z): #A,b,x,z=lists (matrix) of ft.arb
             #ftprint(x)
             #ftprint(b)
             #L=[ftprint(Ai) for Ai in A]
@@ -431,6 +403,33 @@ def gauss_seidel_dimn(A,b,x,z): #A,b,x,z=lists (matrix) of ft.arb
               #input()                  
             return x_prime
 
+def gauss_seidel_dimn(A,b,x,z): #A,b,x,z=lists (matrix) of ft.arb
+            #ftprint(x)
+            #ftprint(b)
+            #L=[ftprint(Ai) for Ai in A]
+            #input()
+            x_prime=[xi for xi in x]
+            if invertibility_of_a_matrix(A)==1:
+              A_arb_mat=ft.arb_mat(A)
+              inv_m_A=(A_arb_mat.mid()).inv()
+              A_precon=inv_m_A*ft.arb_mat(A)
+              b_arb_mat=ft.arb_mat([[bi] for bi in b])
+              b_precon=inv_m_A*b_arb_mat
+
+              for i in range(len(x)):
+                      sum=0
+                      for j in range(len(x)):
+                          if i !=j:
+                              sum+=A_precon[i,j]*x_prime[j]
+                      #print(x_prime)
+                      #input()        
+                      x_prime[i]=gauss_seidel_dim1(A_precon[i,i],b_precon[i,0]-sum,z[i])
+                      if x_prime[i]=='empty':
+                                x_prime='empty'
+                                break
+              #ftprint(x_prime)
+              #input()                  
+            return x_prime
 
 def poly_normal_to_list(f,X):  # f is a sympy expression, X is  the  set of variables
       S=sp.poly(f,X).terms()
@@ -619,6 +618,7 @@ def matrix_multi(M1,M2):
 
 def invertibility_of_a_matrix(M):    # M is interival matrix .. invertibility_of_a_matrix(M) returns 0 if we are sure that M is singular, 1 if we are sure that M invertable and -1 if we do not  know.. The smaller width M has the more sure we are
  Answer =3
+
  L=[[Mij.mid() for Mij in Mi] for Mi in M ]
  T=[]
  try:
@@ -698,7 +698,7 @@ def curve_tracer(P,B,jac,wth=0.001,wth2=1):  #returns all list of boxes that con
                    eval_jac=[[evaluation_poly_list(jac_ij,list_of_boxes[0]) for jac_ij in Jac_i ]  for Jac_i in jac  ]
                    full_rankness= checking_full_rank(eval_jac)
                    if   full_rankness ==1 and width(list_of_boxes[0])<wth2 :
-                        print([ [round(float(jac_ij.lower()),5),round(float(jac_ij.upper()),5)] for jac_ij in list_of_boxes[0]  ])
+                        #print([ [round(float(jac_ij.lower()),5),round(float(jac_ij.upper()),5)] for jac_ij in list_of_boxes[0]  ])
                         #input()
                         #print("regular")
                         #input()
@@ -808,7 +808,55 @@ def checking_smoothness(P,B,jac,wth=0.1):
 
 def ftprint(B,k=3):
   print([[round(float(Bi.lower()),k),round(float(Bi.upper()),k) ] for Bi in B] ) 
+def hansen_hengupta(x_teld,A,b,x,z):   
+    """
+    It returns the output of Hansen Hengupta operator
+    A=[[ft.arb(2,1),ft.arb(0,1),ft.arb(0,1)],[ft.arb(0,1),ft.arb(3,1),ft.arb(0,1)],[ft.arb(0,1),ft.arb(0,1),ft.arb(4,1)]]
+    b=[ft.arb(4,1),ft.arb(6,1),ft.arb(5,1)]
+    x=[ft.arb(0,1),ft.arb(0,1.5),ft.arb(0,1),ft.arb(1,1),ft.arb(0,1)]
+    z=[ft.arb(1,0.1),ft.arb(1,0.5),ft.arb(0,1),ft.arb(1,1),ft.arb(0,1)]
+    b=[ft.arb(0,0.1),ft.arb(0,0.1),ft.arb(0,0.1),ft.arb(0,0.1),ft.arb(0,0.1)]
+    x_teld=[0.01,0.01,0.01,1.01,0.01]
+    >>> hansen_hengupta(x_teld,A,b,x,x)
+    [ft.arb(0.0100000000000000 +/- 2.10e-19,0.100000000558794 +/- 4.56e-16), ft.arb(0.0100000000000000 +/- 2.10e-19,0.715100008994341 +/- 1.04e-16),ft.arb(0.0100000000000000 +/- 2.10e-19,0.0500000002793968 +/- 2.77e-17),ft.arb(1.01000000000000 +/- 9.0e-18,0.0500000002793968 +/- 2.77e-17),ft.arb(0.0100000000000000 +/- 2.10e-19,0.126582279801369 +/- 2.87e-16)]
+    >>> hansen_hengupta(x_teld,A,b,z,z)
+    'empty'
+    """
 
+    x_prime=[]
+    z_prime=[]
+    b_prime=[-bi for bi in b]
+    for i in range(len(x)):
+      x_prime.append(x[i]-x_teld[i])
+      z_prime.append(z[i]-x_teld[i])
+                           
+    #x_prime=[xi-x_teldi for xi, x_teldi in zip(x,x_teld)]
+    #z_prime=[zi-x_teldi for zi,x_teldi in zip(z,x_teld)]
+    Gamma=gauss_seidel_dimn(A,b_prime,x_prime,z_prime)
+    
+    """print("Gamma:")
+    pprint(x_teld)
+    print('x')
+    ftprint(x)
+    print('x_prime') 
+    ftprint(x_prime)
+    ftprint([A[0][1]])
+    ftprint(b)
+    ftprint(b_prime)
+    
+    ftprint(Gamma)
+    input()"""
+    S=[]
+    if Gamma!= 'empty':
+      for i in range(len(Gamma)):
+        S.append(Gamma[i]+x_teld[i])
+      Answer=S  
+
+        
+    else:
+        Answer ='empty'
+
+    return Answer
 def solver(P,jac,B):
     it=0
     Solutions=[]
@@ -833,8 +881,13 @@ def solver(P,jac,B):
                    jac_eval_current_box=matrixval(jac,current_box)
                    mid_box=[ft.arb(float(interval.mid()))  for interval in current_box]
                    b=[evaluation_poly_list(Pi,mid_box) for Pi in P]
+                   """print('mid',mid_box)
+                   print('jac',jac_eval_current_box[0][1].lower(),jac_eval_current_box[0][1].upper())
+                   print('b',b)
+                   ftprint(current_box)"""
+
+
                    Image_of_current_box=hansen_hengupta(mid_box,jac_eval_current_box,b,current_box,current_box)
-                   #ftprint(current_box)
                    #ftprint(Image_of_current_box)
                    #input()
                    if Image_of_current_box !='empty':

@@ -13,49 +13,72 @@ from pprint import pprint
 
 x1= sp.Symbol('x1')
 x2= sp.Symbol('x2')
+x3= sp.Symbol('x3')
 t1= sp.Symbol('t1')
 t2= sp.Symbol('t2')
 q1= sp.Symbol('q1')
 q2= sp.Symbol('q2')
 q3= sp.Symbol('q3')
-X=[x1,x2]
+X=[x1,x2,x3]
 
 ##############################################
 # Example of solver method 
 ############################################
-P1=x1**2-x2**2
-P2=x1**2+x2**2-1
+P1=x1+x2**2+x3-3
+P2=x1**2-x2+x3-1
+P3=x1-x2-x3**3+1
 
 
 P1=d.poly_normal_to_list(P1,X)
 P2=d.poly_normal_to_list(P2,X)
-P=[P1,P2]
+P3=d.poly_normal_to_list(P3,X)
+P=[P1,P2,P3]
 
-B=[ft.arb(0.1,2),ft.arb(0.1,2)]
-B=[ft.arb(-0.7,0.2),ft.arb(-0.7,0.3)]
-x_teld=[-0.7,-0.7]
+#B=[ft.arb(0.1,2),ft.arb(0.1,2)]
+B=[ft.arb(0.1,2),ft.arb(0.1,2),ft.arb(0.1,2)]
+x_teld=[0.1,0.1,0.1]
 
 
 jac=d.jacobian_of_function_list(P)
-jac=d.matrixval(jac,B)
+
+#jac1=d.matrixval(jac,B)
+
+
 b=[d.evaluation_poly_list(Pi,B) for Pi in P]
 
 
-T=d.hansen_hengupta(x_teld,jac,b,B,B)
-d.ftprint(T)
+T=d.solver(P,jac,B)
+for Ti in T:
+	d.ftprint(Ti)
+
+
 #d.ftprint(d.hansen_hengupta(x_teld,jac,b,B,B))
 
 
 
-
 #hansen_hengupta and then come back to solver
-	
-a=ft.arb(1,1)
-b=ft.arb(0,1)
-x=ft.arb(0,5)
+"""
+x=[ft.arb(1/8,3/8),ft.arb(1/8,3/8)]
+A=[[ft.arb(1),ft.arb(0.25,0.75)],[ft.arb(-1),ft.arb(1)]]
+b=[7/(67),0]
+x=[ft.arb(0.125,0.125),ft.arb(0.125,0.125)]
+x_teld=[ft.arb(0,3/8),ft.arb(0,3/8)]
+T=d.gauss_seidel_dimn(A,b,x_teld,x_teld)
+d.ftprint(T)
+S=[]
+for Ti in T:
+	Ti=Ti+1/8
+d.ftprint(T)
+
+
+
+
+a=ft.arb(1,0)
+b=ft.arb(-0.25,1)
+x=ft.arb(0,0.25)
 
 #d.ftprint([d.gauss_seidel_dim1(a,b,x)])
-
+"""
 
 
 
