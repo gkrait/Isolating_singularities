@@ -194,6 +194,21 @@ def subdivide(B): #B is a list of ft.arb
          B_one_sub=subdivide([B[len(B)-1]])
          children=cartesian_product(B_pri_sub,B_one_sub)
      return children
+def ftconstructor(a,b): #if an interval is [a,b] it returns ft.arb((a+b)/2,(b-a)/2)
+     return ft.arb((a+b)/2,(b-a)/2)
+
+def k_subdivide(B,k=2): #B is a list of ft.arb
+     children=[]
+     if len(B)==1:
+      for i in range(k):
+        children.append([ftconstructor(B[0].lower()+2*i*(B[0].rad())/k,B[0].lower()+2*(i+1)*(B[0].rad())/k )])
+     else:
+         B_prime=B[:]
+         B_prime.remove(B_prime[len(B_prime)-1])
+         B_pri_sub= k_subdivide(B_prime,k)
+         B_one_sub=k_subdivide([B[len(B)-1]],k)
+         children=cartesian_product(B_pri_sub,B_one_sub)
+     return children     
 def i_minor(jac,i): #jac is a list of lists of  list_poly. i_minor(jac,i) is the i-th minor of jac
          jac_array=copy(np.array(jac))
          minor_i_array=np.delete(jac_array, i, axis=1)
@@ -739,25 +754,27 @@ def box_membership(B1,B2):
     else:
         comparing=0
     return comparing
-def overlapping_boxes_2d(list_of_boxes):  #detects the pair-wise intersections of list of boxes
-  list_box_intersection=[]
+def connected_components(list_of_boxes):  #Returns the connected components of list_of_boxes
+  connected_components={}
   list_removable_ind=[]
+  flaged_boxes=[]
   for box_index in range(len(list_of_boxes)):
-    for diff_box in range(box_index+1,len(list_of_boxes)):
-      intersection_certificate=1
-      intersection_box=[]
-      for j in range(2):
-         proj1=[ list_of_boxes[box_index][0],list_of_boxes[box_index][1]  ]
-         proj2=[ list_of_boxes[diff_box][0],list_of_boxes[diff_box][1]  ] 
-         try:
-            intersection_j=proj1[j].intersection(proj2[j])
+    if box_index not in flaged_boxes:
+      connected_components[box_index]=[box_index]
+      for diff_box in range(box_index+1,len(list_of_boxes)):
+        intersection_certificate=1
+        intersection_box=[]
+        for j in range(len(list_of_boxes[0])):
+          try:
+            intersection_j=list_of_boxes[box_index][j].intersection(list_of_boxes[diff_box][j])
             intersection_box.append(intersection_j)
-         except:
+          except:
              intersection_certificate=0
              break
-      if intersection_certificate ==1:
-            list_box_intersection.append([list_of_boxes[box_index],list_of_boxes[diff_box]])  
-  return list_box_intersection
+        if intersection_certificate ==1:
+            connected_components[box_index].append(diff_box)
+            flaged_boxes.append(diff_box)              
+  return connected_components
 
 
 def B_Ball_calculator(B):   # returns B_Ball
@@ -857,7 +874,7 @@ def hansen_hengupta(x_teld,A,b,x,z):
         Answer ='empty'
 
     return Answer
-def solver(P,jac,B):
+def solver(P,jac,B,k=2): #k is the number of parts in which every interval is divided  
     it=0
     Solutions=[]
     L=[B]
@@ -897,13 +914,13 @@ def solver(P,jac,B):
                                                 currecnt_box_contains_its_image=0
 
                                     if currecnt_box_contains_its_image==1 :
-                                          Solutions.append(current_box)    # or better to add Image_of_current_box?
+                                          Solutions.append(Image_of_current_box)    
                                           L.remove(current_box)
                                     else:
                                            try:    # to check whether the intersection of current_box with its image (Image_of_current_box) is non empty
                                                for i in range(len(current_box)):
                                                    Intersection = current_box[i].intersection(Image_of_current_box[i])
-                                               new_children=subdivide(current_box)
+                                               new_children=k_subdivide(current_box,k)
 
                                                L.remove(current_box)
                                                L =   L +new_children
@@ -914,6 +931,37 @@ def solver(P,jac,B):
 
     return Solutions     
 
+def solver2(P,jac,B):
+   S=solver(P,jac,B)
+   S2=[]
+   k=2
+   connected_components1=connected_components(S)
+   while(len(connected_components1)!= len(S)):
+    for component in connected_components1:
+      if len(connected_components1[component])==1:
+        S2.append(S[connected_components1[component][0]])
+      else:
+        union_box=S[connected_components1[component][0]]
+        for i in range(1,len(connected_components1[component])):
+          union_box=box_union(union_box,S[connected_components1[component][i]])
+          union_box_inflated= [x + y for x, y in zip(union_box, [ft.arb(0.001,0.001)]*len(union_box))]
+          #ftprint(union_box)
+          
+          #ftprint(union_box_inflated)
+       
+          S3=solver(P,jac,union_box_inflated,k)
+          S2=S2+S3
+    k+=1    
+
+    S=S2[:]
+    S2=[]
+    connected_components1= connected_components(S)    
+   return S    
+
+      
+
+
+  
 #example to transfer a sympy expression to a poly_list
 x1= sp.Symbol('x1')
 x2= sp.Symbol('x2')
