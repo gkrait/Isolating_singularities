@@ -24,10 +24,9 @@ X=[x1,x2,x3]
 ##############################################
 # Example of solver method 
 ############################################
-P1=x1+x2**2+x3-3
-P2=x1**2-x2+x3-1
-P3=x1-x2-x3**3+1
-
+P1=x1-x3**2
+P2=x2-x3**3
+P3=x1-x3
 
 P1=d.poly_normal_to_list(P1,X)
 P2=d.poly_normal_to_list(P2,X)
@@ -35,52 +34,22 @@ P3=d.poly_normal_to_list(P3,X)
 P=[P1,P2,P3]
 
 #B=[ft.arb(0.1,2),ft.arb(0.1,2)]
-B=[ft.arb(0.1,2),ft.arb(0.1,2),ft.arb(0.1,2)]
-x_teld=[0.1,0.1,0.1]
+B=[ft.arb(0,3),ft.arb(0,3),ft.arb(0,3)]
+x_teld=[0,0]
 
 
 jac=d.jacobian_of_function_list(P)
 
-#jac1=d.matrixval(jac,B)
 
 
-b=[d.evaluation_poly_list(Pi,B) for Pi in P]
 
 
-T=d.solver(P,jac,B)
+T=d.solver2(P,jac,B)
+
 for Ti in T:
 	d.ftprint(Ti)
 
-
-#d.ftprint(d.hansen_hengupta(x_teld,jac,b,B,B))
-
-
-
-#hansen_hengupta and then come back to solver
-"""
-x=[ft.arb(1/8,3/8),ft.arb(1/8,3/8)]
-A=[[ft.arb(1),ft.arb(0.25,0.75)],[ft.arb(-1),ft.arb(1)]]
-b=[7/(67),0]
-x=[ft.arb(0.125,0.125),ft.arb(0.125,0.125)]
-x_teld=[ft.arb(0,3/8),ft.arb(0,3/8)]
-T=d.gauss_seidel_dimn(A,b,x_teld,x_teld)
-d.ftprint(T)
-S=[]
-for Ti in T:
-	Ti=Ti+1/8
-d.ftprint(T)
-
-
-
-
-a=ft.arb(1,0)
-b=ft.arb(-0.25,1)
-x=ft.arb(0,0.25)
-
-#d.ftprint([d.gauss_seidel_dim1(a,b,x)])
-"""
-
-
+the solver is done try iy with the robot examples 
 
 
 
