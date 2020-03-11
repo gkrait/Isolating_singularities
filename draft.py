@@ -156,16 +156,21 @@ def removing_duplicated_terms(list_poly):
     return(list_poly_reduced)
 def Ball_for_terms(L,X):  #L=[list of integers,a coefficient] X is list of variables
     P=1
-    for i in range(len(L[0])) :
+    if type(L[0])==list:
+      for i in range(len(L[0])) :
         P=P*X[0][i]**(L[0][i])
-    M= inBall(P,X)
-    S=[sp.poly(T,*X[0],*X[1],X[2]).terms() for T in  M]
-    S[0][0]=list(S[0][0])
-    for i in  range(len(S)):
+      M= inBall(P,X)
+      S=[sp.poly(T,*X[0],*X[1],X[2]).terms() for T in  M]
+      S[0][0]=list(S[0][0])
+      for i in  range(len(S)):
         for j in range(len(S[i])):
               S[i][j]=list(S[i][j])
               S[i][j][0]=list(S[i][j][0])
               S[i][j][1]=L[1]*S[i][j][1]
+    elif L[0]=='cos':
+      pass
+              
+    
     return S
 def Ball_for_interval_poly(list_of_terms,X):
     poly_SP=[]
@@ -174,6 +179,9 @@ def Ball_for_interval_poly(list_of_terms,X):
         SDP=Ball_for_terms(T,X)
         poly_SP=poly_SP+SDP[0]
         poly_DP=poly_DP+SDP[1]
+
+        
+    
 
     return [removing_duplicated_terms(poly_SP),removing_duplicated_terms(poly_DP)]
 def gauss_seidel_dimnp(A,b,x,z):
@@ -267,9 +275,8 @@ def Ball_interval(list_polys):
     Ball_system= [*Ball_system1,*Ball_system2]   #removing unnessary terms
     for Pi in Ball_system:
         for Pij in Pi:
-            if [str(pow) for pow in  Pij[0]]==["0"]*len(Pij[0]):
+            if Pij[1]==0:
                 Pi.remove(Pij)
-                break
     last_eq=[]
     for r in X[1]:
           Ter=sp.poly(r**2,*X[0],*X[1],X[2]).terms()
@@ -839,40 +846,57 @@ def hansen_hengupta(x_teld,A,b,x,z):
     >>> hansen_hengupta(x_teld,A,b,z,z)
     'empty'
     """
-
     x_prime=[]
     z_prime=[]
     b_prime=[-bi for bi in b]
     for i in range(len(x)):
       x_prime.append(x[i]-x_teld[i])
       z_prime.append(z[i]-x_teld[i])
-                           
-    #x_prime=[xi-x_teldi for xi, x_teldi in zip(x,x_teld)]
-    #z_prime=[zi-x_teldi for zi,x_teldi in zip(z,x_teld)]
+    
+    Gamma=[]
+    Gamma1=[]
     Gamma=gauss_seidel_dimn(A,b_prime,x_prime,z_prime)
+    """Sol=ft.acb_mat(A).solve(ft.acb_mat(b_prime))
+
+  
+    for i in range(len(b_prime)):
+      Gamma1.append(Sol[1,0].real)
+
+    for i in range(len(b_prime)):
+      try:
+        Gamma.append(Gamma1[i].intersection(x_prime[i]))  
+      except:
+        Gamma="empty"
+        break"""
+        
+
     
-    """print("Gamma:")
-    pprint(x_teld)
-    print('x')
-    ftprint(x)
-    print('x_prime') 
-    ftprint(x_prime)
-    ftprint([A[0][1]])
-    ftprint(b)
-    ftprint(b_prime)
-    
-    ftprint(Gamma)
-    input()"""
     S=[]
     if Gamma!= 'empty':
+      #ftprint(x)
+
+      """print("Gamma:")
+      #pprint(x_teld)
+      #print('x')
+      ftprint(x,5)
+      #print('x_prime') 
+      ftprint(x_prime,5)
+      pprint(Matrix(A))
+      #ftprint(b,5)
+      ftprint(b_prime,5)
+    
+      ftprint(Gamma,5)
+      input()"""
       for i in range(len(Gamma)):
         S.append(Gamma[i]+x_teld[i])
-      Answer=S  
-
+      Answer=S[:]  
+      #ftprint(S)
+      #input()  
         
     else:
         Answer ='empty'
 
+    
     return Answer
 def solver(P,jac,B,k=2): #k is the number of parts in which every interval is divided  
     it=0
@@ -899,21 +923,29 @@ def solver(P,jac,B,k=2): #k is the number of parts in which every interval is di
                    mid_box=[ft.arb(float(interval.mid()))  for interval in current_box]
                    b=[evaluation_poly_list(Pi,mid_box) for Pi in P]
                    """print('mid',mid_box)
-                   print('jac',jac_eval_current_box[0][1].lower(),jac_eval_current_box[0][1].upper())
+                   print('the invertability',invertibility_of_a_matrix(jac_eval_current_box))
+                   try:
+                    pprint(jac_eval_current_box)
+                   except:
+                    pass
                    print('b',b)
-                   ftprint(current_box)"""
-
-
-                   Image_of_current_box=hansen_hengupta(mid_box,jac_eval_current_box,b,current_box,current_box)
-                   #ftprint(Image_of_current_box)
-                   #input()
-                   if Image_of_current_box !='empty':
+                   ftprint(current_box)
+                   input()"""
+                   if invertibility_of_a_matrix(jac_eval_current_box)==1:
+                    Image_of_current_box=hansen_hengupta(mid_box,jac_eval_current_box,b,current_box,current_box)
+                    #ftprint(Image_of_current_box)
+                    #input()
+                    if Image_of_current_box !='empty':
+                                    """ftprint(current_box)
+                                    ftprint(Image_of_current_box)
+                                    input()"""
                                     currecnt_box_contains_its_image=1
                                     for i  in range(len(Image_of_current_box)):
                                           if  (Image_of_current_box[i]).lower() <= (current_box[i]).lower() or (Image_of_current_box[i]).upper() >= (current_box[i]).upper():
                                                 currecnt_box_contains_its_image=0
 
                                     if currecnt_box_contains_its_image==1 :
+                                          #print('Hi',Solutions)
                                           Solutions.append(Image_of_current_box)    
                                           L.remove(current_box)
                                     else:
@@ -926,12 +958,22 @@ def solver(P,jac,B,k=2): #k is the number of parts in which every interval is di
                                                L =   L +new_children
                                            except:
                                                L.remove(current_box)
-                   else:
+                    else:
                           L.remove(L[0])
 
+            
+                   else:
+                    new_children=k_subdivide(current_box,k)
+                    L.remove(current_box)
+                    L =   L +new_children
+
+                                               
+
+    #print(Solutions)
     return Solutions     
 
 def solver2(P,jac,B):
+   t1=time.time()
    S=solver(P,jac,B)
    S2=[]
    k=2
@@ -944,23 +986,36 @@ def solver2(P,jac,B):
         union_box=S[connected_components1[component][0]]
         for i in range(1,len(connected_components1[component])):
           union_box=box_union(union_box,S[connected_components1[component][i]])
-          union_box_inflated= [x + y for x, y in zip(union_box, [ft.arb(0.001,0.001)]*len(union_box))]
-          #ftprint(union_box)
-          
-          #ftprint(union_box_inflated)
-       
-          S3=solver(P,jac,union_box_inflated,k)
-          S2=S2+S3
-    k+=1    
+        union_box_inflated= [x + y for x, y in zip(union_box, [ft.arb(0,0.001)]*len(union_box))]      
 
+        S3=solver(P,jac,union_box_inflated,k)
+        S2=S2+S3
+    k+=1    
     S=S2[:]
     S2=[]
-    connected_components1= connected_components(S)    
+    connected_components1= connected_components(S) 
+
+   t2=time.time()
+   print(t2-t1)
    return S    
 
-      
+
+def func_eval(P,B): #evaluate a function like cos, sin in the box B 
+   if type(P[0])==list:
+    evaluation =evaluation_poly_list(P,B)
+   elif P[0]=='cos':
+    evaluation=evaluation_poly_list(P[1],B).cos()
+   elif P[0]=='sin':
+    evaluation=evaluation_poly_list(P[1],B).sin()
+    
+   return evaluation 
+   
+
+  
 
 
+
+"""
   
 #example to transfer a sympy expression to a poly_list
 x1= sp.Symbol('x1')
@@ -1013,7 +1068,7 @@ jac=jacobian_of_function_list(P) # the Jacobian matrix of P
 
 Ball=(Ball_interval(P))
 B_Ball=B_Ball_calculator(B)
-
+"""
 
 
 
