@@ -1,4 +1,5 @@
 import draft as d
+import function_version as fv
 import matplotlib.pyplot as plt
 import numpy as np
 import flint  as ft
@@ -10,6 +11,7 @@ from sympy import *
 import inspect
 import math
 from pprint import pprint
+
 
 
 x1= sp.Symbol('x1')
@@ -24,38 +26,77 @@ P2=x2-x4**3+x4
 P3=x4-x3
 
 #changing the polynomials data to lists
-"""P1=d.poly_normal_to_list(P1,X)
+P1=d.poly_normal_to_list(P1,X)
 P2=d.poly_normal_to_list(P2,X)
 P3=d.poly_normal_to_list(P3,X)
 P=[P1,P2,P3]
-B=[ft.arb(0,0.2),ft.arb(0,0.2),ft.arb(0,1.1),ft.arb(0,1.1)]
+
+func1=fv.poly_list_tofunc(P1)
+func2=fv.poly_list_tofunc(P2)
+func3=fv.poly_list_tofunc(P3)
+func=[func1,func2,func3]
+
+B=[ft.arb(0.5,0.5),ft.arb(2.5,0.5),ft.arb(3.5,0.5),ft.arb(4.5,0.5)]
+
+
+d.ftprint([func[0](B)])
+#changing the polynomials to funcs 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##############################################################################
+# Example of finding a node using Ball system I manually computed B_Ball 
+#because with big boxes, the algorithm does not stop in a realistic time (337.74 seconds) 
+##############################################################################
+"""x1= sp.Symbol('x1')
+x2= sp.Symbol('x2')
+x3= sp.Symbol('x3')
+x4= sp.Symbol('x4')
+X=[x1,x2,x3,x4]
+
+#Defining the curve:
+P1=x1-x4**2+1
+P2=x2-x4**3+x4
+P3=x4-x3
+
+#changing the polynomials data to lists
+P1=d.poly_normal_to_list(P1,X)
+P2=d.poly_normal_to_list(P2,X)
+P3=d.poly_normal_to_list(P3,X)
+P=[P1,P2,P3]
+B=[ft.arb(0.03,0.2),ft.arb(0.03,0.2),ft.arb(0.03,1.1),ft.arb(0.03,1.1)]
 
 import math
 # computing  the Ball system and B_Ball
 Ball=d.Ball_interval(P)
 B_Ball=d.B_Ball_calculator(B)
 
-B_Ball=[ft.arb(0.001,0.01),ft.arb(0.001,0.01),ft.arb(0.001,0.01),ft.arb(0.001,0.01), ft.arb(1/(math.sqrt(2)),0.01),ft.arb(1/(math.sqrt(2)),0.01),ft.arb(2,0.1)]
+B_Ball=[ft.arb(0.003,1.01),ft.arb(0.003,1.01),ft.arb(0.003,1.01),ft.arb(0.003,1.01), ft.arb(1/(math.sqrt(2))+0.03,1.01),ft.arb(1/(math.sqrt(2)+0.03),1.01),ft.arb(2.03,1.1)]
 jac_Ball= d.jacobian_of_function_list(Ball)   #the Jacobian of Ball
-
 answer=d.solver2(Ball,jac_Ball,B_Ball)
-
-
 for Ti in answer:
-	d.ftprint(Ti,10)
-"""
-
-
-There is a problem in the solver Maybe when a sol in is the boundary
-
-
-
-
-
+	d.ftprint(Ti) """
 ##############################################################################
-# Example of finding a cusp using Ball system (86.2 seconds for this example)#
+# Example of finding a cusp using Ball system (27.3 seconds for this example)#
 ##############################################################################
-x1= sp.Symbol('x1')
+"""x1= sp.Symbol('x1')
 x2= sp.Symbol('x2')
 x3= sp.Symbol('x3')
 x4= sp.Symbol('x4')
@@ -71,7 +112,7 @@ P1=d.poly_normal_to_list(P1,X)
 P2=d.poly_normal_to_list(P2,X)
 P3=d.poly_normal_to_list(P3,X)
 P=[P1,P2,P3]
-B=[ft.arb(0,0.2),ft.arb(0,0.2),ft.arb(0,0.2),ft.arb(0,0.2)]
+B=[ft.arb(0.01,0.2),ft.arb(0.01,0.2),ft.arb(0.1,0.2),ft.arb(0.01,0.2)]
 
 
 # computing  the Ball system and B_Ball
@@ -83,7 +124,7 @@ answer=d.solver2(Ball,jac_Ball,B_Ball)
 
 
 for Ti in answer:
-	d.ftprint(Ti)
+	d.ftprint(Ti)"""
 ##############################################
 # Example of solver method ###################
 ############################################
@@ -104,10 +145,28 @@ x_teld=[0,0]
 jac=d.jacobian_of_function_list(P)
 answer=d.solver2(P,jac,B)
 for Ti in answer:
-	d.ftprint(Ti) """                            
+	d.ftprint(Ti)  """                          
                                              
 #############################################
+##############################################
+# Example of solver method (0.065 seconds)################
+############################################
+"""x1= sp.Symbol('x1')
+x2= sp.Symbol('x2')
+X=[x1,x2]
+P1=x1**2-x2**2
+P2=x1**2+x2**2-1
 
+
+P1=d.poly_normal_to_list(P1,X)
+P2=d.poly_normal_to_list(P2,X)
+P=[P1,P2]
+B=[ft.arb(0,3),ft.arb(0,3)]
+x_teld=[0,0]
+jac=d.jacobian_of_function_list(P)
+answer=d.solver2(P,jac,B)
+for Ti in answer:
+	d.ftprint(Ti) """  
 
 
 

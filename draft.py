@@ -10,6 +10,8 @@ import inspect
 import math
 from pprint import pprint
 
+import functools
+
 def lineno():
     """Returns the current line number in our program."""
     return inspect.currentframe().f_back.f_lineno
@@ -908,7 +910,7 @@ def solver(P,jac,B,k=2): #k is the number of parts in which every interval is di
         value_of_P_current_box= [evaluation_poly_list(Pi,current_box) for Pi in P]
         solution_in_current_box=1
         for value in value_of_P_current_box:  #checking whether the box has no solution
-            try:                    # notice that if value ==0 then a TypeError occures
+            try:                    # notice that if value ==0 then a TypeError occurs
                if 0 not in (ft.arb(1)*(value)):
                  solution_in_current_box=0
                  break
@@ -1000,20 +1002,49 @@ def solver2(P,jac,B):
    return S    
 
 
-def func_eval(P,B): #evaluate a function like cos, sin in the box B 
-   if type(P[0])==list:
-    evaluation =evaluation_poly_list(P,B)
-   elif P[0]=='cos':
-    evaluation=evaluation_poly_list(P[1],B).cos()
-   elif P[0]=='sin':
-    evaluation=evaluation_poly_list(P[1],B).sin()
-    
-   return evaluation 
+
    
+class Function:
+  def __init__(self,func):
+    self.func=func
+  def __add__ (self, other):
+    pass
+    
 
-  
+def compose(f, g):
+    return lambda x: f(g(x))
+def sqrt_t(I):
+  if 0 in I:
+    return ftconstructor(0,math.sqrt(float(I.upper())))
+  else:
+       return ftconstructor(math.sqrt(float(I.lower())),math.sqrt(float(I.upper())))
+def F_Ballplus(U):    # len(U) is odd
+  n=int((len(U)+1)/2)
+
+  Y=U[:n]
+  r_times_sqrtt=[yi *sqrt_t(U[2*n-2]) for yi in U[n:2*n-2] ]
+  F1=U[:2]
+  for i in range(2,n):
+      F1.append(Y[i]+r_times_sqrtt[i-2])
+  return F1
+def F_Ballminus(U):    # len(U) is odd
+  n=int((len(U)+1)/2)
+  Y=U[:n]
+  r_times_sqrtt=[yi *sqrt_t(U[2*n-2]) for yi in U[n:2*n-2] ]
+  F2=U[:2]
+  for i in range(2,n):
+      F2.append(Y[i]-r_times_sqrtt[i-2])
+  return F2          
+
+def Ball_func(func,Jac_func): # func is a function that sends a list of intervals to an internal ....   Jac_func(i) is the pratial dervative of func wrt the i-variable 
+   S_func=lambda U: 1/2*(compose(func,F_Ballplus)(U)+compose(func,F_Ballplus)(U))
+   D_func= lambda U: 1/(2*sqrt_t(U[len(U)-1]))*(compose(func,F_Ballplus)(U)+compose(func,F_Ballplus)(U)) if 0 not \
+    in U[len(U)-1] else sum([nabla_funci(U)*ri for Yi,ri in zip(Jac_func,[0,0]+U[int((len(U)+1)/2):len(U)-1])  ])
+   return [S_func,D_func] 
 
 
+def poly_list_tofunc(P):
+  return lambda B: evaluation_poly_list(P,B)
 
 """
   
@@ -1262,7 +1293,7 @@ print(len(projection))
 #print(hansen_hengupta(x_teld,jac_B,b,B,B)[0] in B[0])
 #print(hansen_hengupta(x_teld,jac_B,b,B,B))
 #print(B[0] in hansen_hengupta(x_teld,jac_B,b,B,B )[0])
-#example cheching Assumption 1
+#example checking Assumption 1
 #Example 1
 """
 P1= [[[[1,0,0],1],[[0,0,2],-1],[[0,0,0],1] ],   [[[0,1,0],1],[[0,0,3],-1],[[0,0,1],1] ]  ] # the curve x-z^3=y-z^2 =0
