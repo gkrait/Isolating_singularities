@@ -36,12 +36,26 @@ func2=fv.poly_list_tofunc(P2)
 func3=fv.poly_list_tofunc(P3)
 func=[func1,func2,func3]
 
+
+jac_func=[ [fv.poly_list_tofunc(Pij) for Pij in d.jacobian_of_function_list(P)[i] ] for i in range(len(d.jacobian_of_function_list(P)))  ]
+
+partial_P1=d.jacobian_of_function_list(P)[1]
+H_P1=d.jacobian_of_function_list(partial_P1)
+
+
+
+H_P1_func=[ [fv.poly_list_tofunc(partial_Pij)  for partial_Pij  in H_P1[i]]  for i in range(len(H_P1))      ]   
+
+
 B=[ft.arb(0.5,0.5),ft.arb(2.5,0.5),ft.arb(3.5,0.5),ft.arb(4.5,0.5)]
 
+print(H_P1_func[3][3](B))
 
-d.ftprint([func[0](B)])
+
+#for Ti in H_P1_func:
+#	print(Ti[0](B))
+
 #changing the polynomials to funcs 
-
 
 
 
@@ -166,7 +180,7 @@ x_teld=[0,0]
 jac=d.jacobian_of_function_list(P)
 answer=d.solver2(P,jac,B)
 for Ti in answer:
-	d.ftprint(Ti) """  
+	d.ftprint(Ti) """ 
 
 
 

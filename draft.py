@@ -980,7 +980,7 @@ def solver2(P,jac,B):
    S2=[]
    k=2
    connected_components1=connected_components(S)
-   while(len(connected_components1)!= len(S)):
+   while len(connected_components1)!= len(S) :
     for component in connected_components1:
       if len(connected_components1[component])==1:
         S2.append(S[connected_components1[component][0]])
@@ -1003,12 +1003,7 @@ def solver2(P,jac,B):
 
 
 
-   
-class Function:
-  def __init__(self,func):
-    self.func=func
-  def __add__ (self, other):
-    pass
+
     
 
 def compose(f, g):
@@ -1045,6 +1040,7 @@ def Ball_func(func,Jac_func): # func is a function that sends a list of interval
 
 def poly_list_tofunc(P):
   return lambda B: evaluation_poly_list(P,B)
+
 
 """
   
