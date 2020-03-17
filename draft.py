@@ -169,8 +169,6 @@ def Ball_for_terms(L,X):  #L=[list of integers,a coefficient] X is list of varia
               S[i][j]=list(S[i][j])
               S[i][j][0]=list(S[i][j][0])
               S[i][j][1]=L[1]*S[i][j][1]
-    elif L[0]=='cos':
-      pass
               
     
     return S
@@ -585,7 +583,7 @@ def power_interval(a,n):
    
 
   return the_power
-def zerofree_intervals_multi(B1,B2): #does interval multiplication for B1,B2 if they are of different sign to avoid a bug in flint
+def intervals_multi(B1,B2): #does interval multiplication for B1,B2 if they are of different sign to avoid a bug in flint
     if type(B1)!=type(ft.arb(1)) :
         B1=ft.arb(float(B1))
     if type(B2)!=type(ft.arb(1)) :
@@ -619,7 +617,7 @@ def evaluation_term(term, B):    #evaluate a term at a box B... term
            the_evaluation=ft.arb(1)
            for i in range(len(term[0])):
                 if term[0][i]!= 0:
-                   the_evaluation=zerofree_intervals_multi(the_evaluation,(power_interval(B[i],term[0][i])))
+                   the_evaluation=intervals_multi(the_evaluation,(power_interval(B[i],term[0][i])))
                    #the_evaluation=(the_evaluation)*(power_interval(B[i],term[0][i]))
 
            if type(term[1]) ==type(ft.arb(1)): #to avoid an error by sympy  zeros
@@ -635,12 +633,12 @@ def matrix_multi(M1,M2):
         for j in range(len(M2[0])):
             sum=0
             for k in range(len(M1[0])):
-                sum=sum+zerofree_intervals_multi(M1[i][k],M2[k][j])
+                sum=sum+intervals_multi(M1[i][k],M2[k][j])
             the_product[i]=the_product[i]+[sum]
 
     return the_product
 
-def invertibility_of_a_matrix(M):    # M is interival matrix .. invertibility_of_a_matrix(M) returns 0 if we are sure that M is singular, 1 if we are sure that M invertable and -1 if we do not  know.. The smaller width M has the more sure we are
+def invertibility_of_a_matrix(M):    # M is interval matrix .. invertibility_of_a_matrix(M) returns 0 if we are sure that M is singular, 1 if we are sure that M invertable and -1 if we do not  know.. The smaller width M has the more sure we are
  Answer =3
 
  L=[[Mij.mid() for Mij in Mi] for Mi in M ]

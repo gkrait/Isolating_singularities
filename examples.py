@@ -14,21 +14,58 @@ from pprint import pprint
 
 
 
+##########################
+#trying solver_func
+
+
+x1= sp.Symbol('x1')
+x2= sp.Symbol('x2')
+X=[x1,x2]
+
+P1=x1**2-x2**2
+P2=x1**2+x2**2-1
+
+P1=d.poly_normal_to_list(P1,X)
+P2=d.poly_normal_to_list(P2,X)
+P=[P1,P2]
+func= [fv.poly_list_tofunc(Pi)  for Pi in P]
+
+jac_poly=d.jacobian_of_function_list(P)
+jac_func=[[fv.poly_list_tofunc(Pij)  for Pij in Pi ]  for Pi in jac_poly ]
+
+
+
+B=[ft.arb(0,3),ft.arb(0,3)]
+
+for Ti in  fv.func_solver(func,jac_func,B):
+	d.ftprint(Ti)
+
+###########################################################################################
+# Comparing the func version with the poly_list (not ready)
+###########################################################################################
+
+"""
 x1= sp.Symbol('x1')
 x2= sp.Symbol('x2')
 x3= sp.Symbol('x3')
 x4= sp.Symbol('x4')
-X=[x1,x2,x3,x4]
+r3= sp.Symbol('r3')
+r4= sp.Symbol('r4')
+t= sp.Symbol('t')
+
+X=[[x1,x2,x3,x4],[r3,r4],t]
 
 #Defining the curve:
 P1=x1-x4**2+1
 P2=x2-x4**3+x4
 P3=x4-x3
 
+
+
 #changing the polynomials data to lists
-P1=d.poly_normal_to_list(P1,X)
-P2=d.poly_normal_to_list(P2,X)
-P3=d.poly_normal_to_list(P3,X)
+P1=d.poly_normal_to_list(P1,X[0])
+P2=d.poly_normal_to_list(P2,X[0])
+P3=d.poly_normal_to_list(P3,X[0])
 P=[P1,P2,P3]
 
 func1=fv.poly_list_tofunc(P1)
@@ -39,46 +76,44 @@ func=[func1,func2,func3]
 
 jac_func=[ [fv.poly_list_tofunc(Pij) for Pij in d.jacobian_of_function_list(P)[i] ] for i in range(len(d.jacobian_of_function_list(P)))  ]
 
-partial_P1=d.jacobian_of_function_list(P)[1]
+partial_P1=d.jacobian_of_function_list(P)[0]
+
+Jac_funcP1=[ fv.poly_list_tofunc(Pi) for Pi in partial_P1 ]
+
 H_P1=d.jacobian_of_function_list(partial_P1)
-
-
-
 H_P1_func=[ [fv.poly_list_tofunc(partial_Pij)  for partial_Pij  in H_P1[i]]  for i in range(len(H_P1))      ]   
 
+partial_P2=d.jacobian_of_function_list(P)[1]
+H_P2=d.jacobian_of_function_list(partial_P2)
+H_P2_func=[ [fv.poly_list_tofunc(partial_Pij)  for partial_Pij  in H_P2[i]]  for i in range(len(H_P2))  ]
 
-B=[ft.arb(0.5,0.5),ft.arb(2.5,0.5),ft.arb(3.5,0.5),ft.arb(4.5,0.5)]
+partial_P3=d.jacobian_of_function_list(P)[2]
+H_P3=d.jacobian_of_function_list(partial_P3)
+H_P3_func=[ [fv.poly_list_tofunc(partial_Pij)  for partial_Pij  in H_P3[i]]  for i in range(len(H_P3))]  
 
-print(H_P1_func[3][3](B))
+B_Ball=[ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(2,1)]
 
+
+B=[ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1)]
+
+d.ftprint(fv.jac_Ball_of_onefunction(func1,Jac_funcP1,H_P1_func,B_Ball))
+ballsystem=d.Ball_for_interval_poly(P[0],X)[0]
+jacballsystem=d.jacobian_of_function_list([ballsystem])[0]
+
+input()
+d.ftprint([ d.evaluation_poly_list(P_i,B_Ball) for P_i in   jacballsystem ] )
+input()
+
+print(jacballsystem)
 
 #for Ti in H_P1_func:
 #	print(Ti[0](B))
 
-#changing the polynomials to funcs 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-##############################################################################
-# Example of finding a node using Ball system I manually computed B_Ball 
-#because with big boxes, the algorithm does not stop in a realistic time (337.74 seconds) 
-##############################################################################
+#changing the polynomials to funcs """
+###########################################################################################
+# Example of finding a node using Ball system I manually computed B_Ball ##################
+#because with big boxes, the algorithm does not stop in a realistic time (337.74 seconds) #
+###########################################################################################
 """x1= sp.Symbol('x1')
 x2= sp.Symbol('x2')
 x3= sp.Symbol('x3')
