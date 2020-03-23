@@ -13,11 +13,190 @@ import math
 from pprint import pprint
 
 
+x1= sp.Symbol('x1')
+x2= sp.Symbol('x2')
+x3= sp.Symbol('x3')
+x4= sp.Symbol('x4')
+r3= sp.Symbol('r3')
+r4= sp.Symbol('r4')
+t= sp.Symbol('t')
+X=[[x1,x2,x3,x4],[r3,r4],t]
+#Defining the curve:
+#P1=x2**3*x1**2+2*x2**2*x1**4+3*x3**2+ 4*x4**2+1
+P1=x1+2*x1*x2+3*x1*x3+5*x1*x4
+P2=x2-x4**3
+P3=x3-x4
+Ball1=d.inBall(P1,X)
+Ball2=d.inBall(P2,X)
+Ball3=d.inBall(P3,X)
 
-##########################
-#trying solver_func
+U=[ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1)]
+	  		
+P=[d.poly_normal_to_list(Pi,X[0]) for Pi in [P1,P2,P3] ]
+Jet_P_list=d.Jet_poly_list(P)
+
+U_pluse=fv.F_Ballplus(U)
+U_minus=fv.F_Ballminus(U)
 
 
+Jet_P_func=[ {T: fv.poly_list_tofunc(Jet_P_list[i][T]) for T in Jet_P_list[i] } for i in range(3) ]
+
+DP1=d.poly_normal_to_list(Ball1[1],X[0]+X[1]+[X[2]])
+
+
+Ball=d.Ball_interval(P)
+
+
+
+d.ftprint([ d.evaluation_poly_list(Pi,U) for Pi in Ball ])
+d.ftprint(fv.Ball_system(Jet_P_func,U))
+
+
+
+
+
+##########################################
+#Comparing SP for func and the classical input##
+##########################################
+#classical input
+"""x1= sp.Symbol('x1')
+x2= sp.Symbol('x2')
+x3= sp.Symbol('x3')
+x4= sp.Symbol('x4')
+r3= sp.Symbol('r3')
+r4= sp.Symbol('r4')
+t= sp.Symbol('t')
+X=[[x1,x2,x3,x4],[r3,r4],t]
+#Defining the curve:
+#P1=x2**3*x1**2+2*x2**2*x1**4+3*x3**2+ 4*x4**2+1
+P1=x1-x4**2
+P2=x2-x4**3
+P3=x3-x4
+Ball1=d.inBall(P1,X)
+Ball2=d.inBall(P2,X)
+Ball3=d.inBall(P3,X)
+
+U=[ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0.5,0.5)]
+	  		
+P=[d.poly_normal_to_list(Pi,X[0]) for Pi in [P1,P2,P3] ]
+Jet_P_list=d.Jet_poly_list(P)
+
+U_pluse=fv.F_Ballplus(U)
+U_minus=fv.F_Ballminus(U)
+
+
+Jet_P_func={T: fv.poly_list_tofunc(Jet_P_list[0][T]) for T in Jet_P_list[0] }
+SP1=d.poly_normal_to_list(Ball1[0],X[0]+X[1]+[X[2]])
+
+print(Ball1)
+d.ftprint([d.evaluation_poly_list(SP1,U)] )
+d.ftprint([ 1/2 *( fv.poly_list_tofunc(Jet_P_list[0][(0,0,0,0)])(U_pluse) \
+	   +fv.poly_list_tofunc(Jet_P_list[0][(0,0,0,0)])(U_minus) ) ])"""
+
+#########################################
+# general  test for  polynomials ... not ready yet 
+"""x1= sp.Symbol('x1')
+x2= sp.Symbol('x2')
+x3= sp.Symbol('x3')
+x4= sp.Symbol('x4')
+r3= sp.Symbol('r3')
+r4= sp.Symbol('r4')
+t= sp.Symbol('t')
+
+X=[[x1,x2,x4],[r4],t]
+
+#Defining the curve:
+P1=x1-x4**2+1
+P2=x2-x4**3+x4
+
+U=[ft.arb(0.03,0.2),ft.arb(0.03,0.2),ft.arb(0.03,0.2),ft.arb(1.03,0.2),ft.arb(1.53,1)]
+T1=d.inBall(P1,X)
+T2=d.inBall(P2,X)
+
+
+
+#changing the polynomials data to lists
+P1=d.poly_normal_to_list(P1,X[0])
+P2=d.poly_normal_to_list(P2,X[0])
+P=[P1,P2]
+
+
+
+func1=fv.poly_list_tofunc(P1)
+func2=fv.poly_list_tofunc(P2)
+
+
+
+
+func=lambda B : [func1(B),func2(B)]
+
+
+jac_poly=d.jacobian_of_function_list(P)
+jac_func=lambda B: [[fv.poly_list_tofunc(Pij)(B) for Pij in Pi ]  for Pi in jac_poly ]
+
+
+
+H_P1=d.jacobian_of_function_list(jac_poly[0])
+H_P1_func=[ [fv.poly_list_tofunc(partial_Pij)  for \
+             partial_Pij  in H_P1[i]]  for i in range(len(H_P1)) ]  
+
+
+H_P2=d.jacobian_of_function_list(jac_poly[1])
+H_P2_func=[ [fv.poly_list_tofunc(partial_Pij)  for \
+             partial_Pij  in H_P2[i]]  for i in range(len(H_P2)) ]  
+
+H_func= lambda B: [ [[Pij(B) for Pij in Pi  ] for Pi in Hi  ] for Hi in [H_P1_func,H_P2_func] ]
+
+
+
+
+#ball system
+ball_func=fv.Ball_func(func,jac_func,U)
+
+print(fv.jac_Ball(func,jac_func,H_func,U))
+input()                  
+
+jac_ball_func=lambda U: fv.complete_jac_ball(func,jac_func,H_func,U)
+
+
+
+
+print(fv.func_solver(ball_func,jac_ball_func1,U))
+
+"""
+##################################
+#simple example solver_func#######
+##################################
+"""x1= sp.Symbol('x1')
+x2= sp.Symbol('x2')
+x3= sp.Symbol('x3')
+X=[x1,x2,x3]
+
+P1=x1**2-x2**2
+P2=x1**2+x2**2+x3**2-1
+P3=x3-0.5
+
+P1=d.poly_normal_to_list(P1,X)
+P2=d.poly_normal_to_list(P2,X)
+P3=d.poly_normal_to_list(P3,X)
+P=[P1,P2,P3]
+func= [fv.poly_list_tofunc(Pi)  for Pi in P]
+
+jac_poly=d.jacobian_of_function_list(P)
+jac_func=[[fv.poly_list_tofunc(Pij)  for Pij in Pi ]  for Pi in jac_poly ]
+
+
+
+B=[ft.arb(0,3),ft.arb(0,3),ft.arb(0,3)]
+
+for Ti in  fv.func_solver(func,jac_func,B):
+	d.ftprint(Ti)
+
+"""
+##################################
+#simple example solver_func#######
+##################################
+"""
 x1= sp.Symbol('x1')
 x2= sp.Symbol('x2')
 X=[x1,x2]
@@ -39,7 +218,7 @@ B=[ft.arb(0,3),ft.arb(0,3)]
 
 for Ti in  fv.func_solver(func,jac_func,B):
 	d.ftprint(Ti)
-
+"""
 ###########################################################################################
 # Comparing the func version with the poly_list (not ready)
 ###########################################################################################

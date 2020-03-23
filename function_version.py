@@ -41,18 +41,58 @@ def F_Ballminus(U):    # len(U) is odd
       F2.append(Y[i]-r_times_sqrtt[i-2])
   return F2          
 
-def Ball_func(func,Jac_func): # func is a function that sends a list of intervals to an internal ....   Jac_func(i) is the pratial dervative of func wrt the i-variable 
-
-   S_func=lambda U: 1/2*(compose(func,F_Ballplus)(U)+compose(func,F_Ballminus)(U))
-   D_func= lambda U: 1/(2*sqrt_t(U[len(U)-1]))*(compose(func,F_Ballplus)(U)+compose(func,F_Ballminus)(U)) if 0 not \
-    in U[len(U)-1] else sum([d.intervals_multi(nabla_funci(U),ri) for nabla_funci,ri in zip(Jac_func,[0,0]+U[int((len(U)+1)/2):len(U)-1])  ])
-   return [S_func,D_func] 
-
 
 def poly_list_tofunc(P):
   return lambda B: d.evaluation_poly_list(P,B)
-def eval_func(func,U):
-  return func(U)
+
+def SD_Pi(JetPi,U): # JetPi (dictionary) is the jet of one function Pi
+  n=int((len(U)+1)/2)
+  Pi=JetPi[(0,)*n]
+  S_Pi= 1/2*(Pi(F_Ballplus(U))+Pi(F_Ballminus(U)))
+  if 0 not in U[2*n-2]:
+    D_Pi=(Pi(F_Ballplus(U))-Pi(F_Ballminus(U)))/(2*sqrt_t(U[2*n-2]))
+  else:
+    n=int((len(U)+1)/2)
+    Id_n=list(np.eye(n, dtype=int))
+    nablaP=[  JetPi[tuple(Ii)] for Ii in  Id_n ]  
+    D_Pi=ft.arb(0)
+    for i in range(len(Id_n)-2):
+      D_Pi += d.intervals_multi(nablaP[i+2](U),U[n+i])
+
+  return [S_Pi, D_Pi]
+def Ball_system(JetP,U):
+  S_func=[]
+  D_func=[]
+  n=int((len(U)+1)/2)
+  for i in range(n-1):
+     SDPi=SD_Pi(JetP[i],U)
+     S_func.append(SDPi[0])
+     D_func.append(SDPi[1])
+  Ball=S_func+ D_func
+  last_eq=sum( [d.power_interval(Ui,2) for Ui in U[n:2*n-2] ] )-ft.arb(1) 
+  Ball.append(last_eq)
+  return Ball
+    
+
+
+"""
+def Ball_func(func,Jac_func,U): # func is a function that sends a list of intervals to an internal ....   Jac_func(i) is the pratial dervative of func wrt the i-variable 
+ S_func=[]
+ D_func=[]
+ n=int((len(U)+1)/2 )
+ for i in range(len(F_Ballplus(U))-1):
+
+   S_func.append (1/2*(func(F_Ballplus(U))[i]+func(F_Ballminus(U))[i]) )
+   if 0 not in U[len(U)-1] :
+    D_func.append(1/(2*sqrt_t(U[len(U)-1]))*(func(F_Ballplus(U))[i]+func(F_Ballminus(U))[i]))
+   else:
+    D_func.append( sum([d.intervals_multi(nabla_funci,ri) for \
+      nabla_funci,ri in zip(Jac_func(U)[i],[0,0]+U[int((len(U)+1)/2):len(U)-1])  ]) )
+ last_eq=sum( [d.intervals_multi(Ui,Ui) for Ui in U[n:2*n-2] ] )-1
+ return S_func+D_func+[last_eq]
+
+
+
 
 
 def complete_jac_ball(func,jac_func,H_func,U): 
@@ -60,8 +100,6 @@ def complete_jac_ball(func,jac_func,H_func,U):
   SP=[]
   DP=[]
   for i in range(len(func)):
-     
-
      SP.append(jac_Ball_of_onefunction(func[i],jac_func[i],H_func[i],U)[0] )
      DP.append(jac_Ball_of_onefunction(func[i],jac_func[i],H_func[i],U)[1] )
   
@@ -87,43 +125,41 @@ def invertability_jac_Ball(func,Jac_func,U): #still not ready
         return -1
 
       #the following method is not ready
-def jac_Ball_of_onefunction(func,Jac_func,H_func,U): #func is from R^n to R.. Jac_func is the Jacobian of func 
+def jac_Ball(func,Jac_func,H_func,U): #func is from R^n to R.. Jac_func is the Jacobian of func 
+  write again this 
   n=int((len(U)+1)/2)
   answer=[]
   #Computing the partial derivatives of S.func (see the proof of Lemma 55)
-  for j in range(n):
-    f=Ball_func(Jac_func[j],H_func[j])[0]
-    answer.append(f(U))
+  for j in range(n-1):
+    nabla_SD_Pi=Ball_func(lambda U1: Jac_func(U1)[j],lambda U1: H_func(U1)[j],U )[:2*n-2]
+    D_nblaPi=nabla_SD_Pi[n:]
+    for P in nabla_SD_Pi[n:]:
+      P=d.intervals_multi(P,U[2*n-2])
+    sum1=ft.arb(0) 
+    for i in range(2,n):
+        sum1 += d.intervals_multi(D_nblaPi[i-2],U[i+n-2])
+    nabla_SD_Pi.append(sum1) 
+    answer.append(nabla_SD_Pi)
+  ############################################
+  #Computing the partial derivatives of D.func 
+  for j in range(n-1):
+     nabla_SD_Pi=Ball_func(lambda U1: Jac_func(U1)[j],lambda U1: H_func(U1)[j],U )[:2*n-2]
+     D_nblaPj=nabla_SD_Pi[n:]+nabla_SD_Pi[]
+     sum1=ft.arb(0) 
+     if 0 not in U[2*n-2]:
+       T=sum([d.intervals_multi(xi,yi) for xi, yi  in zip(nabla_SD_Pi[2:n], U[n:2*n-2] )  ]   )
+       T=d.intervals_multi(T,1/(2*U[2*n-2]))
+       nbla_DPi.append(T)
+     answer.append(nbla_DPi)  
+
+
   for j in range(2,n):
     answer.append(d.intervals_multi(Ball_func(Jac_func[j],H_func[j])[1](U), U[2*n-2]))
     D_P=[Ball_func(Jac_func[j],H_func[j])[1](U) for j in range(2,n)]
   #for the derivative wrt t: 
-  sum=ft.arb(0) 
-  for i in range(2,n):
-    sum += d.intervals_multi(D_P[i-2],U[i+n-2])
-  answer.append(sum) 
-  SP=answer
-  answer=[]
-  ############################################""
-  #Computing the partial derivatives of D.func 
-  for j in range(n):
-    answer.append(Ball_func(Jac_func[j],H_func[j])[1](U))
-  for j in range(2,n):
-    answer.append(d.intervals_multi(Ball_func(Jac_func[j],H_func[j])[0](U), U[2*n-2]))
-    partial_D_P=[Ball_func(Jac_func[j],H_func[j])[1](U) for j in range(2,n)]
-  #for the derivative wrt t: 
-  sum=ft.arb(0) 
-  if 0 not in U[2*n-2]:
-    partial_S_P=[Ball_func(Jac_func[j],H_func[j])[0](U) for j in range(2,n)]
-    for i in range(2,n):
-      sum += d.intervals_multi(D_P[i-2],U[i+n-2])
-    S=sum-Ball_func(func,Jac_func)[1](U)
-    DP_t=d.intervals_multi(1/(U[2*n-2]),S)
-    answer.append(DP_t)
-  else:
-        pass
+  ############################################
+  #Computing the partial derivatives of D.func    
 
-  return [SP,answer]    
 
 
 def func_matrixval(jac,X): #jac as i_minor and X is a list of ft.arb
@@ -207,5 +243,5 @@ def func_solver(P,jac,B,k=2): #k is the number of parts in which every interval 
     #print(Solutions)
     return Solutions    
 
-
+"""
 

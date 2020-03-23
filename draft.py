@@ -9,7 +9,7 @@ from sympy import *
 import inspect
 import math
 from pprint import pprint
-
+import operator
 import functools
 
 def lineno():
@@ -594,7 +594,7 @@ def intervals_multi(B1,B2): #does interval multiplication for B1,B2 if they are 
         upper_point=max(end_points)
         the_product=ft.arb(0.5*(upper_point+lower_point),0.5*(upper_point-lower_point))
     else:
-        the_product=B1*B2
+        the_product=B1*B2 
     return the_product
 
 def evaluation_poly_list(poly_list, B):
@@ -605,25 +605,31 @@ def evaluation_poly_list(poly_list, B):
            evaluation=evaluation+value_of_term
         else:
                 evaluation=evaluation+ft.arb(float(value_of_term))
+       
     return evaluation
 
 def evaluation_term(term, B):    #evaluate a term at a box B... term
        if [str(T) for T in term[0]]==["0"]*len(term[0]) :
+           
            if type(term[1]) ==type(ft.arb(1)): #to avoid an error by sympy  zeros
               the_evaluation=term[1]
            else:
                 the_evaluation =ft.arb(float(term[1]))
+      
        else:
            the_evaluation=ft.arb(1)
            for i in range(len(term[0])):
                 if term[0][i]!= 0:
                    the_evaluation=intervals_multi(the_evaluation,(power_interval(B[i],term[0][i])))
+                   #print(B[i], term[0],i)
+                   #print(the_evaluation.lower())
+                   #ftprint([intervals_multi(the_evaluation,(power_interval(B[i],term[0][i])))])
+                   #input()
                    #the_evaluation=(the_evaluation)*(power_interval(B[i],term[0][i]))
-
            if type(term[1]) ==type(ft.arb(1)): #to avoid an error by sympy  zeros
                       the_evaluation=the_evaluation*term[1]
            else:
-               the_evaluation =the_evaluation*ft.arb(float(term[1]))
+               the_evaluation =intervals_multi(the_evaluation,ft.arb(float(term[1])) )
 
        return the_evaluation
 def matrix_multi(M1,M2):
@@ -1039,6 +1045,22 @@ def Ball_func(func,Jac_func): # func is a function that sends a list of interval
 def poly_list_tofunc(P):
   return lambda B: evaluation_poly_list(P,B)
 
+
+def Jet_poly_list(P):  # P is map from R^n to R^{n-1} and returns JetP
+  jac_P=jacobian_of_function_list(P)
+  Id_n=np.eye(len(P)+1, dtype=int) #the identity matrix of size n
+  JetP=[]
+  for j in range(len(P)):
+    JetP.append({ tuple(Id_n[i]):jac_P[j][i] for i in range(len(P)+1)  })
+  for k in range(len(P)):
+    J2=jacobian_of_function_list(jac_P[k])
+    Jet2={}
+    for i in range(len(J2)):
+      for j in range(i,len(J2[0])):
+        Jet2.update({tuple(map(operator.add, Id_n[i], Id_n[j])):J2[i][j] })
+    JetP[k].update(Jet2)
+    JetP[k].update({(0,)*(len(P)+1):P[k] })
+  return JetP 
 
 """
   
