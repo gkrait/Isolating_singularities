@@ -23,6 +23,61 @@ t= sp.Symbol('t')
 X=[[x1,x2,x3,x4],[r3,r4],t]
 #Defining the curve:
 #P1=x2**3*x1**2+2*x2**2*x1**4+3*x3**2+ 4*x4**2+1
+P1=x1-x4**2+1
+P2=x2-x4**3+x4
+P3=x3-x4
+
+
+U=[ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(1,0),ft.arb(1,0)]	  		
+P=[d.poly_normal_to_list(Pi,X[0]) for Pi in [P1,P2,P3] ]
+Jet_P_list=d.Jet_poly_list(P)
+Jet_P_list[0].update({(3,0,0,0):[ [[1,0,0,1],2] ]})
+Ball= d.Ball_interval(P)
+Ball_jacob= d.jacobian_of_function_list(Ball)
+Sp1=d.matrixval(Ball_jacob,U)
+
+
+print(d.inBall(P1,X))
+d.ftprint((Sp1)[0])
+d.ftprint((Sp1)[3])
+input()
+
+
+
+
+Jet_P_func=[ {T: fv.poly_list_tofunc(Jet_P_list[i][T]) for T in Jet_P_list[i] } for i in range(3) ]
+#d.ftprint(fv.derivatives_of_SDPi(Jet_P_func[0],U)[0])
+#d.ftprint(fv.derivatives_of_SDPi(Jet_P_func[0],U)[1])
+pprint(((fv.Jacobian_of_Ball(Jet_P_func,U))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#########################################################
+#Comparing the ball system when the in the input is a function
+###############################################################
+"""x1= sp.Symbol('x1')
+x2= sp.Symbol('x2')
+x3= sp.Symbol('x3')
+x4= sp.Symbol('x4')
+r3= sp.Symbol('r3')
+r4= sp.Symbol('r4')
+t= sp.Symbol('t')
+X=[[x1,x2,x3,x4],[r3,r4],t]
+#Defining the curve:
+#P1=x2**3*x1**2+2*x2**2*x1**4+3*x3**2+ 4*x4**2+1
 P1=x1+2*x1*x2+3*x1*x3+5*x1*x4
 P2=x2-x4**3
 P3=x3-x4
@@ -46,15 +101,9 @@ DP1=d.poly_normal_to_list(Ball1[1],X[0]+X[1]+[X[2]])
 
 Ball=d.Ball_interval(P)
 
-
-
 d.ftprint([ d.evaluation_poly_list(Pi,U) for Pi in Ball ])
 d.ftprint(fv.Ball_system(Jet_P_func,U))
-
-
-
-
-
+"""
 ##########################################
 #Comparing SP for func and the classical input##
 ##########################################

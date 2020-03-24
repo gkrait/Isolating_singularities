@@ -10,7 +10,7 @@ from sympy import *
 import inspect
 import math
 from pprint import pprint
-
+import operator
 
 
 def compose(f, g):
@@ -48,8 +48,9 @@ def poly_list_tofunc(P):
 def SD_Pi(JetPi,U): # JetPi (dictionary) is the jet of one function Pi
   n=int((len(U)+1)/2)
   Pi=JetPi[(0,)*n]
-  S_Pi= 1/2*(Pi(F_Ballplus(U))+Pi(F_Ballminus(U)))
+  S_Pi= 0.5*Pi(F_Ballplus(U))+0.5*Pi(F_Ballminus(U))
   if 0 not in U[2*n-2]:
+
     D_Pi=(Pi(F_Ballplus(U))-Pi(F_Ballminus(U)))/(2*sqrt_t(U[2*n-2]))
   else:
     n=int((len(U)+1)/2)
@@ -73,58 +74,71 @@ def Ball_system(JetP,U):
   Ball.append(last_eq)
   return Ball
     
+def derivatives_of_SDPi(JetPi,U):
+  n=int((len(U)+1)/2)
+  Id_n=list(np.eye(n, dtype=int))
+  Jet_nabla_Pi=[{}]*n
+  for dervative_index in JetPi:
+    for i in range(n):
+      if dervative_index[i]>0:
+        #print(dervative_index,i)
+        #print({tuple(map(operator.sub, dervative_index, Id_n[i])):JetPi[dervative_index] })
+        #input()
+        Jet_nabla_Pi[i]={**Jet_nabla_Pi[i], **{tuple(map(operator.sub, dervative_index, Id_n[i])):JetPi[dervative_index] } }
+
+  #computing S_nablaPi and D_nablaPi
+  S_nablaPi=[]
+  D_nablaPi=[]
+  for Jet_Pi_xj in Jet_nabla_Pi:
+    SD_Pi_xj=SD_Pi(Jet_Pi_xj,U)
+    S_nablaPi.append(SD_Pi_xj[0])
+    D_nablaPi.append(SD_Pi_xj[1])
+  
+ 
+  #computing the rows of the Jacobian of the Ball system 
+  first_row=S_nablaPi[:]
+  r=U[n:2*n-2]
+  sum1=ft.arb(0)
+  for i in range(2,n):
+    first_row.append(d.intervals_multi(D_nablaPi[i],U[2*n-2]))
+    sum1 +=d.intervals_multi(D_nablaPi[i],r[i-2])
+  first_row.append(0.5*sum1)
+
+  second_row=D_nablaPi+S_nablaPi[2:]
+  if 0 not in U[2*n-2]:
+    sum1=ft.arb(0)
+    for i in range(2,n):
+      sum1 +=d.intervals_multi(S_nablaPi[i],r[i-2])
+    sum1 -= SD_Pi(JetPi,U)[1]
+    second_row.append(d.intervals_multi(sum1, 0.5/(sqrt_t(U[2*n-2])) ))
+  else:
+    sum1=ft.arb(0)
+    for i in range(n):
+      for j in range(n):
+        for k in range(n):
+          s=tuple([sum(x) for x in zip(tuple(Id_n[i]),tuple(Id_n[j]),tuple(Id_n[k]))])
+          if s in JetPi:
+            sum1 +=JetPi[s](U)
+    second_row.append(0.5*sum1)        
+  return [first_row,second_row]
+
+
+def Jacobian_of_Ball(JetP,U):
+  nabla_SP=[]
+  nabla_DP=[]
+  n=int((len(U)+1)/2)
+  for i in range(n-1):
+     partial_SDPi=derivatives_of_SDPi(JetP[i],U)
+     nabla_SP.append(partial_SDPi[0])
+     nabla_DP.append(partial_SDPi[1])
+  Ball=nabla_SP+nabla_DP
+  last_eq=[0]*n+[2*ri for ri in U[n:2*n-2]]+[0]
+  Ball.append(last_eq)
+  return Ball
+
 
 
 """
-def Ball_func(func,Jac_func,U): # func is a function that sends a list of intervals to an internal ....   Jac_func(i) is the pratial dervative of func wrt the i-variable 
- S_func=[]
- D_func=[]
- n=int((len(U)+1)/2 )
- for i in range(len(F_Ballplus(U))-1):
-
-   S_func.append (1/2*(func(F_Ballplus(U))[i]+func(F_Ballminus(U))[i]) )
-   if 0 not in U[len(U)-1] :
-    D_func.append(1/(2*sqrt_t(U[len(U)-1]))*(func(F_Ballplus(U))[i]+func(F_Ballminus(U))[i]))
-   else:
-    D_func.append( sum([d.intervals_multi(nabla_funci,ri) for \
-      nabla_funci,ri in zip(Jac_func(U)[i],[0,0]+U[int((len(U)+1)/2):len(U)-1])  ]) )
- last_eq=sum( [d.intervals_multi(Ui,Ui) for Ui in U[n:2*n-2] ] )-1
- return S_func+D_func+[last_eq]
-
-
-
-
-
-def complete_jac_ball(func,jac_func,H_func,U): 
-  jac_ball=[]
-  SP=[]
-  DP=[]
-  for i in range(len(func)):
-     SP.append(jac_Ball_of_onefunction(func[i],jac_func[i],H_func[i],U)[0] )
-     DP.append(jac_Ball_of_onefunction(func[i],jac_func[i],H_func[i],U)[1] )
-  
-  jac_ball=SP+DP
-  last_eq= lambda U:  [0]*int((len(U)+1)/2) + U[ int((len(U)+1)/2): len(U)-1  ] +[0] 
-  jac_ball.append(last_eq(U))
-  return jac_ball
-
-def invertability_jac_Ball(func,Jac_func,U): #still not ready 
-  if 0 not in U[len(U)-1]:
-    F_Ball=[F_Ballplus(U),F_Ballminus(U)]
-    # checking whether a point is in L_c
-    first_minor=d.i_minor(eval_jac,0)
-    second_minor=d.i_minor(eval_jac,1)
-    first_minor_q1=d.invertibility_of_a_matrix(func_matrixval(first_minor,F_Ball[0]))
-    second_minor_q1= d.invertibility_of_a_matrix(func_matrixval(second_minor,F_Ball[0]))
-    if  first_minor_q1!=1 or first_minor_q1 !=1:
-      return -1
-    else:
-      first_minor_q2=d.invertibility_of_a_matrix(func_matrixval(first_minor,F_Ball[1]))
-      second_minor_q2= d.invertibility_of_a_matrix(func_matrixval(second_minor,F_Ball[1]))
-      if  first_minor_q2!=1 or first_minor_q2 !=1:
-        return -1
-
-      #the following method is not ready
 def jac_Ball(func,Jac_func,H_func,U): #func is from R^n to R.. Jac_func is the Jacobian of func 
   write again this 
   n=int((len(U)+1)/2)
@@ -159,6 +173,39 @@ def jac_Ball(func,Jac_func,H_func,U): #func is from R^n to R.. Jac_func is the J
   #for the derivative wrt t: 
   ############################################
   #Computing the partial derivatives of D.func    
+
+
+
+def complete_jac_ball(func,jac_func,H_func,U): 
+  jac_ball=[]
+  SP=[]
+  DP=[]
+  for i in range(len(func)):
+     SP.append(jac_Ball_of_onefunction(func[i],jac_func[i],H_func[i],U)[0] )
+     DP.append(jac_Ball_of_onefunction(func[i],jac_func[i],H_func[i],U)[1] )
+  
+  jac_ball=SP+DP
+  last_eq= lambda U:  [0]*int((len(U)+1)/2) + U[ int((len(U)+1)/2): len(U)-1  ] +[0] 
+  jac_ball.append(last_eq(U))
+  return jac_ball
+
+def invertability_jac_Ball(func,Jac_func,U): #still not ready 
+  if 0 not in U[len(U)-1]:
+    F_Ball=[F_Ballplus(U),F_Ballminus(U)]
+    # checking whether a point is in L_c
+    first_minor=d.i_minor(eval_jac,0)
+    second_minor=d.i_minor(eval_jac,1)
+    first_minor_q1=d.invertibility_of_a_matrix(func_matrixval(first_minor,F_Ball[0]))
+    second_minor_q1= d.invertibility_of_a_matrix(func_matrixval(second_minor,F_Ball[0]))
+    if  first_minor_q1!=1 or first_minor_q1 !=1:
+      return -1
+    else:
+      first_minor_q2=d.invertibility_of_a_matrix(func_matrixval(first_minor,F_Ball[1]))
+      second_minor_q2= d.invertibility_of_a_matrix(func_matrixval(second_minor,F_Ball[1]))
+      if  first_minor_q2!=1 or first_minor_q2 !=1:
+        return -1
+
+      #the following method is not ready
 
 
 
