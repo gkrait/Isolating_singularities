@@ -13,6 +13,88 @@ import math
 from pprint import pprint
 
 
+
+
+
+
+
+x1= sp.Symbol('x1')
+x2= sp.Symbol('x2')
+x3= sp.Symbol('x3')
+x4= sp.Symbol('x4')
+r3= sp.Symbol('r3')
+r4= sp.Symbol('r4')
+t= sp.Symbol('t')
+X=[[x1,x2,x3,x4],[r3,r4],t]
+P1=x1-x4**2
+P2=x2-x4**3
+P3=x3-x4
+
+
+
+
+U=[ft.arb(0.01,0.1),ft.arb(0.01,0.1),ft.arb(0.01,0.1),ft.arb(0.01,0.1),ft.arb(0.7,0.1),ft.arb(0.7,0.1),ft.arb(0.1,0.1)]	  		
+P=[d.poly_normal_to_list(Pi,X[0]) for Pi in [P1,P2,P3] ]
+func_P=[ fv.poly_list_tofunc(Pi) for Pi in P  ]
+Jet_P_list=d.Jet_poly_list(P)
+Jet_P_list[1].update({(0,0,0,3):[ [[0,0,0,0],-6] ]})
+Ball= d.Ball_interval(P)
+Ball_jacob= d.jacobian_of_function_list(Ball)
+eval_jac_ball=d.matrixval(Ball_jacob,U)
+
+
+Jet_P_func=[ {T: fv.poly_list_tofunc(Jet_P_list[i][T]) for T in Jet_P_list[i] } for i in range(3) ]
+
+func_Ball_jacob= fv.Jacobian_of_Ball(Jet_P_func,U)
+
+func_jac=lambda U1: fv.Jacobian_of_Ball(Jet_P_func,U1)
+T=[]
+T.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[0])
+T.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[1])
+T.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[2])
+T.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[3])
+T.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[4])
+T.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[5])
+T.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[6])
+#for i in range(len(U)):
+#	T+(lambda U1: fv.Ball_system(Jet_P_func,U1)[i],)
+
+
+
+
+print(fv.func_solver(T,func_jac,U))
+
+
+
+##############################
+#the solver with analytic maps
+#################################
+"""
+
+x1= sp.Symbol('x1')
+x2= sp.Symbol('x2')
+x3= sp.Symbol('x3')
+
+X=[x1,x2]
+#Defining the curve:
+
+P1=lambda B: ft.arb.sin(B[0]+B[1])
+P2= lambda B: d.intervals_multi(B[0],ft.arb.exp(B[0]))
+P=[P1,P2]
+P11=lambda B:ft.arb.cos(B[0]+B[1])
+P21=lambda B: d.intervals_multi(B[0],ft.arb.exp(B[0]))+ft.arb.exp(B[0])
+P22=lambda B:0
+jac=[[P11,P11],[P21,P22]]
+B=[ft.arb(0.1,1),ft.arb(0.1,1)]
+
+for Ti in fv.func_solver(P,jac,B):
+ d.ftprint(Ti)
+
+"""
+################################################
+#the jacobian of Ball(P)   func & poly versions#
+################################################
+"""
 x1= sp.Symbol('x1')
 x2= sp.Symbol('x2')
 x3= sp.Symbol('x3')
@@ -27,44 +109,26 @@ P1=x1-x4**2+1
 P2=x2-x4**3+x4
 P3=x3-x4
 
-
-U=[ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(1,0),ft.arb(1,0)]	  		
+U=[ft.arb(0.1,1),ft.arb(0.1,1),ft.arb(0.1,1),ft.arb(0.1,1),ft.arb(0.1,1),ft.arb(0.1,1),ft.arb(0.5,0.5)]	  		
 P=[d.poly_normal_to_list(Pi,X[0]) for Pi in [P1,P2,P3] ]
 Jet_P_list=d.Jet_poly_list(P)
-Jet_P_list[0].update({(3,0,0,0):[ [[1,0,0,1],2] ]})
+Jet_P_list[0].update({(0,0,0,3):[ [[0,0,0,0],-6] ]})
+Jet_P_list[1].update({(0,0,0,3):[ [[0,0,0,0],-6] ]})
 Ball= d.Ball_interval(P)
 Ball_jacob= d.jacobian_of_function_list(Ball)
-Sp1=d.matrixval(Ball_jacob,U)
-
-
-print(d.inBall(P1,X))
-d.ftprint((Sp1)[0])
-d.ftprint((Sp1)[3])
-input()
-
+eval_jac_ball=d.matrixval(Ball_jacob,U)
 
 
 
 Jet_P_func=[ {T: fv.poly_list_tofunc(Jet_P_list[i][T]) for T in Jet_P_list[i] } for i in range(3) ]
 #d.ftprint(fv.derivatives_of_SDPi(Jet_P_func[0],U)[0])
 #d.ftprint(fv.derivatives_of_SDPi(Jet_P_func[0],U)[1])
-pprint(((fv.Jacobian_of_Ball(Jet_P_func,U))))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+print('the func version:')
+d.ftprint(fv.Jacobian_of_Ball(Jet_P_func,U))
+print('the polynomial version:')
+d.ftprint(eval_jac_ball)
+"""
 #########################################################
 #Comparing the ball system when the in the input is a function
 ###############################################################
@@ -72,7 +136,7 @@ pprint(((fv.Jacobian_of_Ball(Jet_P_func,U))))
 x2= sp.Symbol('x2')
 x3= sp.Symbol('x3')
 x4= sp.Symbol('x4')
-r3= sp.Symbol('r3')
+r3= sp.Symbol('r3')""
 r4= sp.Symbol('r4')
 t= sp.Symbol('t')
 X=[[x1,x2,x3,x4],[r3,r4],t]

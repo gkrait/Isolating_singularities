@@ -17,13 +17,28 @@ def compose(f, g):
     return lambda x: f(g(x))
 def composenbox(func,g):  # input of f is a list of n ft.arb and g is a list of 2n-1 ft.arb
   return lambda U:[funci(g(U)) for funci in func ]
+def func_matrixval(jac,X): #jac as i_minor and X is a list of ft.arb
+         #for i in range(len(jac)):
+          #   for j in range(len(jac[0])):
 
+          #       evaluation_jac_X[i][j]=jac[i][j](X)
+          #       if evaluation_jac_X[i][j]==0:       #fixing a bug in flint since Python cannot create arb from type <class 'sympy.core.numbers.Zero'>
+          #           evaluation_jac_X[i][j]=ft.arb(0)
+         
+          T=[]
+          for i in range(len(jac)):
+             T.append([])
+             for j in range(len(jac[i])):
+              T[i].append(ft.arb(jac[i][j](X))) 
+          return T
 
 def sqrt_t(I):
   if 0 in I:
     return d.ftconstructor(0,math.sqrt(float(I.upper())))
-  else:
+  elif 0 < float(I.lower()):
        return d.ftconstructor(math.sqrt(float(I.lower())),math.sqrt(float(I.upper())))
+  
+
 def F_Ballplus(U):    # len(U) is odd
   n=int((len(U)+1)/2)
   Y=U[:n]
@@ -81,11 +96,7 @@ def derivatives_of_SDPi(JetPi,U):
   for dervative_index in JetPi:
     for i in range(n):
       if dervative_index[i]>0:
-        #print(dervative_index,i)
-        #print({tuple(map(operator.sub, dervative_index, Id_n[i])):JetPi[dervative_index] })
-        #input()
         Jet_nabla_Pi[i]={**Jet_nabla_Pi[i], **{tuple(map(operator.sub, dervative_index, Id_n[i])):JetPi[dervative_index] } }
-
   #computing S_nablaPi and D_nablaPi
   S_nablaPi=[]
   D_nablaPi=[]
@@ -113,13 +124,16 @@ def derivatives_of_SDPi(JetPi,U):
     second_row.append(d.intervals_multi(sum1, 0.5/(sqrt_t(U[2*n-2])) ))
   else:
     sum1=ft.arb(0)
-    for i in range(n):
-      for j in range(n):
-        for k in range(n):
+    for i in range(2,n):
+      for j in range(2,n):
+        ri_rj=d.intervals_multi(r[i-2],r[j-2])
+        for k in range(2,n):
+          ri_rj_rk=d.intervals_multi(ri_rj,r[k-2])
           s=tuple([sum(x) for x in zip(tuple(Id_n[i]),tuple(Id_n[j]),tuple(Id_n[k]))])
           if s in JetPi:
-            sum1 +=JetPi[s](U)
-    second_row.append(0.5*sum1)        
+            sum1 +=d.intervals_multi(JetPi[s](U),ri_rj_rk) 
+    
+    second_row.append(sum1/6)        
   return [first_row,second_row]
 
 
@@ -129,6 +143,7 @@ def Jacobian_of_Ball(JetP,U):
   n=int((len(U)+1)/2)
   for i in range(n-1):
      partial_SDPi=derivatives_of_SDPi(JetP[i],U)
+     
      nabla_SP.append(partial_SDPi[0])
      nabla_DP.append(partial_SDPi[1])
   Ball=nabla_SP+nabla_DP
@@ -136,8 +151,71 @@ def Jacobian_of_Ball(JetP,U):
   Ball.append(last_eq)
   return Ball
 
+def func_solver(P,jac,B,k=2): #k is the number of parts in which every interval is divided  
+    it=0
+    Solutions=[]
+    L=[B]
+    while len(L) !=0:
+        it=it+1
+        current_box=L[0]  #evaluating P at the currecnt_box:
+        value_of_P_current_box=[ Pi(current_box) for Pi in P ]
+        solution_in_current_box=1
+        for value in value_of_P_current_box:  #checking whether the box has no solution
+            try:                    # notice that if value ==0 then a TypeError occurs
+               if 0 not in (ft.arb(1)*(value)):
+                 solution_in_current_box=0
+                 break
+            except TypeError:
+                 if value !=0:
+                      solution_in_current_box=0
+                      break            
 
+        if solution_in_current_box==0:
+             L.remove(current_box)
+        
+        
+        else:
+                   jac_eval_current_box=jac(current_box)
+                   mid_box=[ft.arb(float(interval.mid()))  for interval in current_box]
+                   b=[Pi(mid_box) for Pi in P] 
+                   if d.invertibility_of_a_matrix(jac_eval_current_box)==1:
+                    Image_of_current_box=d.hansen_hengupta(mid_box,jac_eval_current_box,b,current_box,current_box)
+                    d.ftprint(current_box)
+                    print(Image_of_current_box)
+                    input() the problem is here 
+                    if Image_of_current_box !='empty':
+                                    currecnt_box_contains_its_image=1
+                                    for i  in range(len(Image_of_current_box)):
+                                          if  (Image_of_current_box[i]).lower() <= (current_box[i]).lower() or (Image_of_current_box[i]).upper() >= (current_box[i]).upper():
+                                                currecnt_box_contains_its_image=0
 
+                                    if currecnt_box_contains_its_image==1 :
+                                          #print('Hi',Solutions)
+                                          Solutions.append(Image_of_current_box)    
+                                          L.remove(current_box)
+                                    else:
+                                           try:    # to check whether the intersection of current_box with its image (Image_of_current_box) is non empty
+                                               for i in range(len(current_box)):
+                                                   Intersection = current_box[i].intersection(Image_of_current_box[i])
+                                               new_children=d.k_subdivide(current_box,k)
+
+                                               L.remove(current_box)
+                                               L =   L +new_children
+                                           except:
+                                               L.remove(current_box)
+                    else:
+                          L.remove(L[0])
+
+            
+                   else:
+                    new_children=d.k_subdivide(current_box,k)
+                    L.remove(current_box)
+                    L =   L +new_children
+
+                                               
+
+    #print(Solutions)
+    return Solutions  
 """
 def jac_Ball(func,Jac_func,H_func,U): #func is from R^n to R.. Jac_func is the Jacobian of func 
   write again this 
@@ -173,9 +251,6 @@ def jac_Ball(func,Jac_func,H_func,U): #func is from R^n to R.. Jac_func is the J
   #for the derivative wrt t: 
   ############################################
   #Computing the partial derivatives of D.func    
-
-
-
 def complete_jac_ball(func,jac_func,H_func,U): 
   jac_ball=[]
   SP=[]
@@ -188,7 +263,6 @@ def complete_jac_ball(func,jac_func,H_func,U):
   last_eq= lambda U:  [0]*int((len(U)+1)/2) + U[ int((len(U)+1)/2): len(U)-1  ] +[0] 
   jac_ball.append(last_eq(U))
   return jac_ball
-
 def invertability_jac_Ball(func,Jac_func,U): #still not ready 
   if 0 not in U[len(U)-1]:
     F_Ball=[F_Ballplus(U),F_Ballminus(U)]
@@ -208,87 +282,7 @@ def invertability_jac_Ball(func,Jac_func,U): #still not ready
       #the following method is not ready
 
 
-
-def func_matrixval(jac,X): #jac as i_minor and X is a list of ft.arb
-         #for i in range(len(jac)):
-          #   for j in range(len(jac[0])):
-
-          #       evaluation_jac_X[i][j]=jac[i][j](X)
-          #       if evaluation_jac_X[i][j]==0:       #fixing a bug in flint since Python cannot create arb from type <class 'sympy.core.numbers.Zero'>
-          #           evaluation_jac_X[i][j]=ft.arb(0)
-         
-          T=[]
-          for i in range(len(jac)):
-             T.append([])
-             for j in range(len(jac[i])):
-              T[i].append(jac[i][j](X))
-          return T
-
-def func_solver(P,jac,B,k=2): #k is the number of parts in which every interval is divided  
-
-    it=0
-    Solutions=[]
-    L=[B]
-    while len(L) !=0:
-        it=it+1
-        current_box=L[0]  #evaluating P at the currecnt_box:
-        value_of_P_current_box= [Pi(current_box) for Pi in P]
-        solution_in_current_box=1
-        for value in value_of_P_current_box:  #checking whether the box has no solution
-            try:                    # notice that if value ==0 then a TypeError occurs
-               if 0 not in (ft.arb(1)*(value)):
-                 solution_in_current_box=0
-                 break
-            except TypeError:
-                 if value !=0:
-                      solution_in_current_box=0
-                      break            
-        if solution_in_current_box==0:
-             L.remove(current_box)
-        else:
-                   jac_eval_current_box=func_matrixval(jac,current_box)
-                   mid_box=[ft.arb(float(interval.mid()))  for interval in current_box]
-                   b=[Pi(mid_box) for Pi in P]
-                   print(jac[0][0](current_box))
-                   d.ftprint(current_box)
-                   d.ftprint(value_of_P_current_box)
-                   pprint(jac_eval_current_box)
-                   input()
-                   if d.invertibility_of_a_matrix(jac_eval_current_box)==1:
-                    Image_of_current_box=d.hansen_hengupta(mid_box,jac_eval_current_box,b,current_box,current_box)
-                    if Image_of_current_box !='empty':
-                                    currecnt_box_contains_its_image=1
-                                    for i  in range(len(Image_of_current_box)):
-                                          if  (Image_of_current_box[i]).lower() <= (current_box[i]).lower() or (Image_of_current_box[i]).upper() >= (current_box[i]).upper():
-                                                currecnt_box_contains_its_image=0
-
-                                    if currecnt_box_contains_its_image==1 :
-                                          #print('Hi',Solutions)
-                                          Solutions.append(Image_of_current_box)    
-                                          L.remove(current_box)
-                                    else:
-                                           try:    # to check whether the intersection of current_box with its image (Image_of_current_box) is non empty
-                                               for i in range(len(current_box)):
-                                                   Intersection = current_box[i].intersection(Image_of_current_box[i])
-                                               new_children=d.k_subdivide(current_box,k)
-
-                                               L.remove(current_box)
-                                               L =   L +new_children
-                                           except:
-                                               L.remove(current_box)
-                    else:
-                          L.remove(L[0])
-
-            
-                   else:
-                    new_children=d.k_subdivide(current_box,k)
-                    L.remove(current_box)
-                    L =   L +new_children
-
-                                               
-
-    #print(Solutions)
-    return Solutions    
+  
 
 """
 

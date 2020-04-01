@@ -647,7 +647,7 @@ def matrix_multi(M1,M2):
 def invertibility_of_a_matrix(M):    # M is interval matrix .. invertibility_of_a_matrix(M) returns 0 if we are sure that M is singular, 1 if we are sure that M invertable and -1 if we do not  know.. The smaller width M has the more sure we are
  Answer =3
 
- L=[[Mij.mid() for Mij in Mi] for Mi in M ]
+ L=[[Mij.mid() if type(Mij)==type(ft.arb(1)) else ft.arb(float(Mij)) for Mij in Mi] for Mi in M ]
  T=[]
  try:
           T=(Matrix(L)).inv()
@@ -837,7 +837,17 @@ def checking_smoothness(P,B,jac,wth=0.1):
 
 
 def ftprint(B,k=3):
-  print([[round(float(Bi.lower()),k),round(float(Bi.upper()),k) ] for Bi in B] ) 
+ answer=[]
+ if type(B[0])==type(ft.arb(1)):   
+  for Bi in B:
+    if type(Bi)==type(ft.arb(0,1)):
+      answer.append([round(float(Bi.lower()),k),round(float(Bi.upper()),k) ] )
+    else:
+      answer.append([Bi,Bi])
+  print(answer)
+ elif  type(B[0])==type([]):
+  pprint(Matrix([[ [round(float(Bij.lower()),k),round(float(Bij.upper()),k) ] if \
+    type(Bij)==type(ft.arb(1)) else [Bij,Bij  ] for Bij in Bi ] for Bi in B ] ))
 def hansen_hengupta(x_teld,A,b,x,z):   
     """
     It returns the output of Hansen Hengupta operator
