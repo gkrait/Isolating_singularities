@@ -12,12 +12,7 @@ import inspect
 import math
 from pprint import pprint
 
-
-
-
-
-
-
+"""
 x1= sp.Symbol('x1')
 x2= sp.Symbol('x2')
 x3= sp.Symbol('x3')
@@ -25,52 +20,109 @@ x4= sp.Symbol('x4')
 r3= sp.Symbol('r3')
 r4= sp.Symbol('r4')
 t= sp.Symbol('t')
-X=[[x1,x2,x3,x4],[r3,r4],t]
+X=[[x1,x2,x4],[r4],t]
 P1=x1-x4**2
 P2=x2-x4**3
-P3=x3-x4
 
 
+print(d.inBall(P1,X))
 
+n=1
 
-U=[ft.arb(0.01,0.1),ft.arb(0.01,0.1),ft.arb(0.01,0.1),ft.arb(0.01,0.1),ft.arb(0.7,0.1),ft.arb(0.7,0.1),ft.arb(0.1,0.1)]	  		
-P=[d.poly_normal_to_list(Pi,X[0]) for Pi in [P1,P2,P3] ]
+U=[ft.arb(0.001,1/n),ft.arb(0.001,1/n),ft.arb(0.001,1/n),ft.arb(1.001,1/n),ft.arb(0.001,1/n)]	  		
+P=[d.poly_normal_to_list(Pi,X[0]) for Pi in [P1,P2] ]
 func_P=[ fv.poly_list_tofunc(Pi) for Pi in P  ]
 Jet_P_list=d.Jet_poly_list(P)
-Jet_P_list[1].update({(0,0,0,3):[ [[0,0,0,0],-6] ]})
+Jet_P_list[1].update({(0,0,3):[ [[0,0,0],-6] ]})
+Ball= d.Ball_interval(P)
+Ball_jacob= d.jacobian_of_function_list(Ball)
+
+
+
+Jet_P_func=[ {T: fv.poly_list_tofunc(Jet_P_list[i][T]) for T in Jet_P_list[i] } for i in range(2) ]
+
+func_Ball_jacob= fv.Jacobian_of_Ball(Jet_P_func,U)
+
+func_jac=lambda U1: fv.Jacobian_of_Ball(Jet_P_func,U1)
+Ball_func=[]
+Ball_func.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[0])
+Ball_func.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[1])
+Ball_func.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[2])
+Ball_func.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[3])
+Ball_func.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[4])
+
+
+
+sol=[0,0,0,1,0]
+eval_jac_ball=d.matrixval(Ball_jacob,sol)
+
+m=0
+for i in range(5):
+	for j in range(5):
+		#print(eval_jac_ball[i])
+		#print( func_Ball_jacob[i])
+		if m < ft.arb(func_Ball_jacob[i][j]).rad():
+			m=ft.arb(func_Ball_jacob[i][j]).rad()
+		if eval_jac_ball[i][j] not in ft.arb( func_Ball_jacob[i][j]) :
+			print('false')
+        		
+#d.solver(Ball,Ball_jacob,U)
+input()
+d.ftprint(fv.func_solver(Ball_func,func_jac,U))
+
+"""
+
+################################################
+# example of the solver where the input is the jet of P 
+#################################################### 
+"""
+x1= sp.Symbol('x1')
+x2= sp.Symbol('x2')
+x3= sp.Symbol('x3')
+x4= sp.Symbol('x4')
+r3= sp.Symbol('r3')
+r4= sp.Symbol('r4')
+t= sp.Symbol('t')
+X=[[x1,x2,x4],[r4],t]
+P1=x1-x4**2+1
+P2=x2-x4**3+x4
+
+
+
+
+
+U=[ft.arb(0.01,0.1),ft.arb(0.01,0.1),ft.arb(0.01,0.1),ft.arb(1.01,0.1),ft.arb(1.01,0.1)]	  		
+P=[d.poly_normal_to_list(Pi,X[0]) for Pi in [P1,P2] ]
+func_P=[ fv.poly_list_tofunc(Pi) for Pi in P  ]
+Jet_P_list=d.Jet_poly_list(P)
+Jet_P_list[1].update({(0,0,3):[ [[0,0,0],-6] ]})
 Ball= d.Ball_interval(P)
 Ball_jacob= d.jacobian_of_function_list(Ball)
 eval_jac_ball=d.matrixval(Ball_jacob,U)
 
 
-Jet_P_func=[ {T: fv.poly_list_tofunc(Jet_P_list[i][T]) for T in Jet_P_list[i] } for i in range(3) ]
+Jet_P_func=[ {T: fv.poly_list_tofunc(Jet_P_list[i][T]) for T in Jet_P_list[i] } for i in range(2) ]
 
 func_Ball_jacob= fv.Jacobian_of_Ball(Jet_P_func,U)
 
 func_jac=lambda U1: fv.Jacobian_of_Ball(Jet_P_func,U1)
-T=[]
-T.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[0])
-T.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[1])
-T.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[2])
-T.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[3])
-T.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[4])
-T.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[5])
-T.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[6])
-#for i in range(len(U)):
-#	T+(lambda U1: fv.Ball_system(Jet_P_func,U1)[i],)
+Ball_func=[]
+Ball_func.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[0])
+Ball_func.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[1])
+Ball_func.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[2])
+Ball_func.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[3])
+Ball_func.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[4])
 
 
+d.ftprint(fv.func_solver(Ball_func,func_jac,U))
 
 
-print(fv.func_solver(T,func_jac,U))
-
-
-
+"""
 ##############################
 #the solver with analytic maps
 #################################
-"""
 
+"""
 x1= sp.Symbol('x1')
 x2= sp.Symbol('x2')
 x3= sp.Symbol('x3')
@@ -84,7 +136,7 @@ P=[P1,P2]
 P11=lambda B:ft.arb.cos(B[0]+B[1])
 P21=lambda B: d.intervals_multi(B[0],ft.arb.exp(B[0]))+ft.arb.exp(B[0])
 P22=lambda B:0
-jac=[[P11,P11],[P21,P22]]
+jac=lambda U: [[P11(U),P11(U)],[P21(U),P22(U)]]
 B=[ft.arb(0.1,1),ft.arb(0.1,1)]
 
 for Ti in fv.func_solver(P,jac,B):
@@ -278,34 +330,37 @@ print(fv.func_solver(ball_func,jac_ball_func1,U))
 
 """
 ##################################
-#simple example solver_func#######
+#simple example solver_func####### 
 ##################################
-"""x1= sp.Symbol('x1')
+x1= sp.Symbol('x1')
 x2= sp.Symbol('x2')
 x3= sp.Symbol('x3')
-X=[x1,x2,x3]
+X=[x1,x2]
 
 P1=x1**2-x2**2
-P2=x1**2+x2**2+x3**2-1
-P3=x3-0.5
+P2=x1**2+x2**2-1
+
 
 P1=d.poly_normal_to_list(P1,X)
 P2=d.poly_normal_to_list(P2,X)
-P3=d.poly_normal_to_list(P3,X)
-P=[P1,P2,P3]
+
+P=[P1,P2]
 func= [fv.poly_list_tofunc(Pi)  for Pi in P]
-
+B=[ft.arb(0,3),ft.arb(0,3)]
 jac_poly=d.jacobian_of_function_list(P)
-jac_func=[[fv.poly_list_tofunc(Pij)  for Pij in Pi ]  for Pi in jac_poly ]
+jac_func=lambda U:  [[d.evaluation_poly_list(jac_poly[0][0],U),\
+ d.evaluation_poly_list(jac_poly[0][1],U)],\
+ [d.evaluation_poly_list(jac_poly[1][0],U),d.evaluation_poly_list(jac_poly[1][1],U)]]
+
+print(jac_func)
+input()
+d.ftprint(fv.func_solver(func,jac_func,B))
 
 
 
-B=[ft.arb(0,3),ft.arb(0,3),ft.arb(0,3)]
 
-for Ti in  fv.func_solver(func,jac_func,B):
-	d.ftprint(Ti)
 
-"""
+
 ##################################
 #simple example solver_func#######
 ##################################

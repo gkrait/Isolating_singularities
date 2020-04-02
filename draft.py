@@ -426,10 +426,6 @@ def gauss_seidel_dimnorigin(A,b,x,z): #A,b,x,z=lists (matrix) of ft.arb
             return x_prime
 
 def gauss_seidel_dimn(A,b,x,z): #A,b,x,z=lists (matrix) of ft.arb
-            #ftprint(x)
-            #ftprint(b)
-            #L=[ftprint(Ai) for Ai in A]
-            #input()
             x_prime=[xi for xi in x]
             if invertibility_of_a_matrix(A)==1:
               A_arb_mat=ft.arb_mat(A)
@@ -437,14 +433,22 @@ def gauss_seidel_dimn(A,b,x,z): #A,b,x,z=lists (matrix) of ft.arb
               A_precon=inv_m_A*ft.arb_mat(A)
               b_arb_mat=ft.arb_mat([[bi] for bi in b])
               b_precon=inv_m_A*b_arb_mat
+              """X=A_precon.solve(b_precon)
+              sol=[]
+              for i in range(len(x)):
+                sol.append(X[i,0])
+              #print(type(sol[0]))
+              #print(ft.arb.solve)
+              #input()  
 
+
+              """
               for i in range(len(x)):
                       sum=0
                       for j in range(len(x)):
                           if i !=j:
-                              sum+=A_precon[i,j]*x_prime[j]
-                      #print(x_prime)
-                      #input()        
+                              sum += intervals_multi(A_precon[i,j],x_prime[j])
+       
                       x_prime[i]=gauss_seidel_dim1(A_precon[i,i],b_precon[i,0]-sum,z[i])
                       if x_prime[i]=='empty':
                                 x_prime='empty'
@@ -561,7 +565,9 @@ def n_volume(B):
     return volume
 def power_interval(a,n):
   the_power=ft.arb(1)
-  if n!=0:
+  if type(a) != type(ft.arb(1)):
+    return float(a)**n
+  elif n!=0:
     if a.lower()>=0:
         the_power=ft.arb(0.5*(a.lower())**n+0.5*(a.upper())**n,0.5*(a.upper())**n-0.5*(a.lower())**n)
     elif a.upper()<= 0:
@@ -641,7 +647,6 @@ def matrix_multi(M1,M2):
             for k in range(len(M1[0])):
                 sum=sum+intervals_multi(M1[i][k],M2[k][j])
             the_product[i]=the_product[i]+[sum]
-
     return the_product
 
 def invertibility_of_a_matrix(M):    # M is interval matrix .. invertibility_of_a_matrix(M) returns 0 if we are sure that M is singular, 1 if we are sure that M invertable and -1 if we do not  know.. The smaller width M has the more sure we are
@@ -846,8 +851,8 @@ def ftprint(B,k=3):
       answer.append([Bi,Bi])
   print(answer)
  elif  type(B[0])==type([]):
-  pprint(Matrix([[ [round(float(Bij.lower()),k),round(float(Bij.upper()),k) ] if \
-    type(Bij)==type(ft.arb(1)) else [Bij,Bij  ] for Bij in Bi ] for Bi in B ] ))
+  pprint([[ [round(float(Bij.lower()),k),round(float(Bij.upper()),k) ] if \
+    type(Bij)==type(ft.arb(1)) else [Bij,Bij  ] for Bij in Bi ] for Bi in B ] )
 def hansen_hengupta(x_teld,A,b,x,z):   
     """
     It returns the output of Hansen Hengupta operator
