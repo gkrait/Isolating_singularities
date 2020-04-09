@@ -238,7 +238,75 @@ def func_solver(P,jac,B,k=2): #k is the number of parts in which every interval 
     return Solutions  
 
 
+def curve_tracer(P,B,jac,wth=0.001,wth2=1):  #returns all list of boxes that contains smooth parts of a curve and it stops if the curve is smooth
+    list_of_boxes=[B]
+    smoothness=1
+    regular_boxes=[]
+    smoothness=1
+    while len(list_of_boxes)!=0 and d.width(list_of_boxes[0])> wth:
+              membership=1
+              eval_P=[Pi(list_of_boxes[0]) for Pi in P]           #checking whether the box contains a point of the curve
+              for eval_Pi_at_B in eval_P:
+                  if 0 not in ft.arb(1)*(eval_Pi_at_B):
+                      membership=0
+              if membership==0:
+                list_of_boxes.remove(list_of_boxes[0])
+                  #print("empty")
+              else:
+                   eval_jac= jac(list_of_boxes[0]) 
+                   full_rankness= d.checking_full_rank(eval_jac)
+                   if   full_rankness ==1 and d.width(list_of_boxes[0])<wth2 :
+                        #print([ [round(float(jac_ij.lower()),5),round(float(jac_ij.upper()),5)] for jac_ij in list_of_boxes[0]  ])
+                        #input()
+                        #print("regular")
+                        #input()
+                        regular_boxes.append(list_of_boxes[0])
+                        list_of_boxes.remove(list_of_boxes[0])
+                   else:
+                        #print('width=',width(list_of_boxes[0]))
+                        #print('the box',[ [round(float(jac_ij.lower()),5),round(float(jac_ij.upper()),5)] for jac_ij in list_of_boxes[0]  ])
+                        #pprint(Matrix([ [[round(float(jac_ij.lower()),5),round(float(jac_ij.upper()),5)] for jac_ij in jac_i] for jac_i in eval_jac  ]))
+                        #input()
+                        #print("we do not know")
+                        new_children=d.subdivide(list_of_boxes[0])
+                        list_of_boxes.remove(list_of_boxes[0])
+                        list_of_boxes = list_of_boxes +new_children
+    if len(list_of_boxes)!=0:
+      smoothness=-1                    
+      #print(list_of_boxes[0])
+    return [regular_boxes,list_of_boxes]
 
+def box_membership(B1,B2):
+    comparing=8
+    B1_contains_B2=1
+    B2_contains_B1=1
+    for i in range(len(B1)):
+        """print(B1[i])
+        print(B2[i])
+        input()"""
+        if B2[i] not in B1[i]:
+                B1_contains_B2=0
+        if B1[i] not in B2[i]:
+            B2_contains_B1=0
+    if  B1_contains_B2==1 and   B2_contains_B1==1:
+        comparing=3
+    elif   B1_contains_B2==1:
+        comparing=1
+    elif   B2_contains_B1==1:
+        comparing=2
+    else:
+        comparing=0
+    return comparing
+
+
+def jet_to_jac(Jet_P):
+ jac=[]
+ Id_n=list(np.eye(len(Jet_P)+1, dtype=int))
+ for j in range(len(Jet_P)):
+   jac.append([])
+   for i in range(len(Jet_P)+1):
+     jac[j].append( Jet_P[j][tuple(Id_n[i])] )
+ return jac 
 """
 def jac_Ball(func,Jac_func,H_func,U): #func is from R^n to R.. Jac_func is the Jacobian of func 
   write again this 

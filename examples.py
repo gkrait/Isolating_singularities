@@ -12,6 +12,123 @@ import inspect
 import math
 from pprint import pprint
 
+x1= sp.Symbol('x1')
+x2= sp.Symbol('x2')
+x3= sp.Symbol('x3')
+x4= sp.Symbol('x4')
+r3= sp.Symbol('r3')
+r4= sp.Symbol('r4')
+t= sp.Symbol('t')
+
+
+P1=x3**3-x3*x1-x2
+P2=3*x3**2-x1
+P3=x4-x3
+
+X=[[x1,x2,x3,x4],[r3,r4],t]
+P=[d.poly_normal_to_list(Pi,X[0]) for Pi in [P1,P2,P3] ]
+
+Ball= d.Ball_interval(P)
+Ball_jacob= d.jacobian_of_function_list(Ball)	
+sol=[0,0,0,0,0.7,0.7,0]
+M=Matrix(d.matrixval(Ball_jacob,sol))
+pprint(M)
+#pprint(M[[0,2,3,4],0:4])
+input()
+
+
+
+
+
+
+
+
+
+
+B=[ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1)]
+
+
+P1=lambda B: d.power_interval(B[0] -8* ft.arb.cos(B[2]),2) + d.power_interval(B[1] -8* ft.arb.sin(B[2]),2) -25
+P2=lambda B: d.power_interval(B[0]-9 -5* ft.arb.cos(B[3]),2) + d.power_interval(B[1] -5* ft.arb.sin(B[3]),2) -64
+P3=lambda B: 16*(B[0]-8*ft.arb.cos(B[2]))*ft.arb.sin(B[2])-\
+(16*B[1]-128*ft.arb.sin(B[2]))*ft.arb.cos(B[2])*10*(B[0]-9-5*ft.arb.cos(B[3]))*ft.arb.sin(B[3])-(10*B[1]-50*ft.arb.sin(B[3]))*ft.arb.cos(B[3])
+P=[P1,P2,P3]
+
+partielP13= lambda B:16*(B[0]-8*ft.arb.cos(B[2]))*ft.arb.sin(B[2])-\
+(16*B[1]-128*ft.arb.sin(B[2]))*ft.arb.cos(B[2])
+partielP24= lambda B:10*(B[0]-9-5*ft.arb.cos(B[3]))*ft.arb.sin(B[3])-(10*B[1]-50*ft.arb.sin(B[3]))*ft.arb.cos(B[3])
+partielP14=lambda B:ft.arb(0)
+
+partielP11=2*B[0]-16*ft.arb.cos(B[2])
+
+partielP12=2*B[1]-16*ft.arb.sin(B[2])
+
+partielP21=2*B[0]-18-10*ft.arb.cos(B[3])
+
+jac=[[partielP11,partielP12],[partielP11,partielP22]]
+
+print(fv.curve_tracer(P,B,jac))
+
+
+
+P=[]
+
+
+
+
+
+
+
+
+
+
+
+
+##############################
+#curve tracer function example
+##############################
+"""
+x1= sp.Symbol('x1')
+x2= sp.Symbol('x2')
+x3= sp.Symbol('x3')
+x4= sp.Symbol('x4')
+r3= sp.Symbol('r3')
+r4= sp.Symbol('r4')
+t= sp.Symbol('t')
+X=[[x1,x2,x4],[r4],t]
+P1=x1-x4**2
+P2=x2-x4**3
+
+P=[d.poly_normal_to_list(Pi,X[0]) for Pi in [P1,P2] ]
+func_P=[ fv.poly_list_tofunc(Pi) for Pi in P  ]
+Jet_P_list=d.Jet_poly_list(P)
+Jet_P_list[1].update({(0,0,3):[ [[0,0,0],-6] ]})
+
+B=[ft.arb(0,1),ft.arb(0,1),ft.arb(0,1)]
+def jet_to_jac(Jet_P):
+ jac=[]
+ Id_n=list(np.eye(len(Jet_P)+1, dtype=int))
+ for j in range(len(Jet_P)):
+   jac.append([])
+   for i in range(len(Jet_P)+1):
+     jac[j].append(fv.poly_list_tofunc( Jet_P[j][tuple(Id_n[i])]) )
+ return jac 
+
+T=jet_to_jac(Jet_P_list) 
+
+func_jac=lambda U: [ [Pij(U)  for Pij in Pi] for Pi in T   ]
+
+
+d.ftprint(fv.curve_tracer(func_P,B,func_jac)[0])
+
+
+#jac_func=lambda U: 
+
+"""
+##############################################
+#proving that the evaluation of  jac of ball #
+#converges to the eval at the solution########
+##############################################
 """
 x1= sp.Symbol('x1')
 x2= sp.Symbol('x2')
@@ -332,7 +449,7 @@ print(fv.func_solver(ball_func,jac_ball_func1,U))
 ##################################
 #simple example solver_func####### 
 ##################################
-x1= sp.Symbol('x1')
+"""x1= sp.Symbol('x1')
 x2= sp.Symbol('x2')
 x3= sp.Symbol('x3')
 X=[x1,x2]
@@ -357,7 +474,7 @@ input()
 d.ftprint(fv.func_solver(func,jac_func,B))
 
 
-
+"""
 
 
 
