@@ -96,17 +96,21 @@ def Ball_system(JetP,U):
   return Ball
     
 def derivatives_of_SDPi(JetPi,U):
+
   n=int((len(U)+1)/2)
   Id_n=list(np.eye(n, dtype=int))
   Jet_nabla_Pi=[{}]*n
   for dervative_index in JetPi:
     for i in range(n):
       if dervative_index[i]>0:
-        Jet_nabla_Pi[i]={**Jet_nabla_Pi[i], **{tuple(map(operator.sub, dervative_index, Id_n[i])):JetPi[dervative_index] } }
+        Jet_nabla_Pi[i]={**Jet_nabla_Pi[i], **{tuple(map(operator.sub,\
+         dervative_index, Id_n[i])):JetPi[dervative_index] } }      
   #computing S_nablaPi and D_nablaPi
   S_nablaPi=[]
   D_nablaPi=[]
+
   for Jet_Pi_xj in Jet_nabla_Pi:
+ Jet_nabla_Pi is not proper 
     SD_Pi_xj=SD_Pi(Jet_Pi_xj,U)
     S_nablaPi.append(SD_Pi_xj[0])
     D_nablaPi.append(SD_Pi_xj[1])
@@ -159,7 +163,9 @@ def Jacobian_of_Ball(JetP,U):
   nabla_DP=[]
   n=int((len(U)+1)/2)
   for i in range(n-1):
+
      partial_SDPi=derivatives_of_SDPi(JetP[i],U)
+
      
      nabla_SP.append(partial_SDPi[0])
      nabla_DP.append(partial_SDPi[1])
@@ -258,18 +264,11 @@ def curve_tracer(P,B,jac,wth=0.001,wth2=1):  #returns all list of boxes that con
                    eval_jac= jac(list_of_boxes[0]) 
                    full_rankness= d.checking_full_rank(eval_jac)
                    if   full_rankness ==1 and d.width(list_of_boxes[0])<wth2 :
-                        #print([ [round(float(jac_ij.lower()),5),round(float(jac_ij.upper()),5)] for jac_ij in list_of_boxes[0]  ])
-                        #input()
-                        #print("regular")
-                        #input()
+
                         regular_boxes.append(list_of_boxes[0])
                         list_of_boxes.remove(list_of_boxes[0])
                    else:
-                        #print('width=',width(list_of_boxes[0]))
-                        #print('the box',[ [round(float(jac_ij.lower()),5),round(float(jac_ij.upper()),5)] for jac_ij in list_of_boxes[0]  ])
-                        #pprint(Matrix([ [[round(float(jac_ij.lower()),5),round(float(jac_ij.upper()),5)] for jac_ij in jac_i] for jac_i in eval_jac  ]))
-                        #input()
-                        #print("we do not know")
+
                         new_children=d.subdivide(list_of_boxes[0])
                         list_of_boxes.remove(list_of_boxes[0])
                         list_of_boxes = list_of_boxes +new_children
@@ -283,9 +282,7 @@ def box_membership(B1,B2):
     B1_contains_B2=1
     B2_contains_B1=1
     for i in range(len(B1)):
-        """print(B1[i])
-        print(B2[i])
-        input()"""
+
         if B2[i] not in B1[i]:
                 B1_contains_B2=0
         if B1[i] not in B2[i]:

@@ -66,13 +66,15 @@ JetP=[{(0,0,0,0):P1, (1,0,0,0): P11,(0,0,0,1): P14, (0,0,0,2):P144,(0,0,0,3):P14
 {(0,0,0,0):P3, (0,0,1,0):P11, (0,0,0,1):P34} ]
  
 
+
 U=[ft.arb(0.1,2),ft.arb(0.1,2),ft.arb(0.1,2),ft.arb(0.1,2),ft.arb(0.01,1),ft.arb(0.01,1),ft.arb(0.01,3)]
+
 
 Ball=fv.Ball_system(JetP,U)
 
-Jac=fv.Jacobian_of_Ball(JetP,U)
 
-print(Jac)  computing the jac of ball 
+Jac=fv.Jacobian_of_Ball(JetP,U)
+print(Jac) 
 
 ############################################
 #draft#######################################
