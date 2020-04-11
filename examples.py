@@ -12,6 +12,73 @@ import inspect
 import math
 from pprint import pprint
 
+
+x1= sp.Symbol('x1')
+x2= sp.Symbol('x2')
+x3= sp.Symbol('x3')
+x4= sp.Symbol('x4')
+r3= sp.Symbol('r3')
+r4= sp.Symbol('r4')
+t= sp.Symbol('t')
+X=[[x1,x2,x4],[r4],t]
+
+P1=lambda B: B[0]- d.intervals_multi(ft.arb.cos(B[3]),(3+d.power_interval(ft.arb.sin(B[3]),4)))+3
+P2=lambda B: B[1] - d.intervals_multi(d.power_interval(ft.arb.sin(B[3]),2),(3 + ft.arb.sin(8*B[3])))
+P3=lambda B: B[2]- B[3]
+P=[P1,P2,P3]
+B=[ft.arb(0),ft.arb(0),ft.arb(0),ft.arb(0)]
+
+P11=lambda B: ft.arb(1)
+P111=lambda B: ft.arb(0)
+
+P14=lambda B:  4* d.intervals_multi( d.power_interval(ft.arb.sin(B[3]),3 ), \
+ d.power_interval (ft.arb.cos(B[3]), 2) )\
+  -d.intervals_multi( (3 + d.power_interval(ft.arb.sin(B[3]),4)), ft.arb.sin(B[3]))
+
+P144=lambda B:  d.intervals_multi( cos(B[3]), (-13* d.power_interval( ft.arb.sin(B[3]),4) + \
+	12* d.intervals_multi(d.power_interval(ft.arb.sin(B[3]),2), d.power_interval(ft.arb.cos(B[3]),2)) - 3) )
+
+P1444=lambda B: d.intervals_multi( ft.arb.sin(B[3]), \
+ (13* d.power_interval(ft.arb.sin(B[3]),4) + 24* d.power_interval(ft.arb.cos(B[3]),4)\
+ -88*d.intervals_multi(d.power_interval(ft.arb.sin(B[3]),2), d.power_interval(ft.arb.cos(B[3]),2) )+ 3) )
+
+
+P24=lambda B:2* d.intervals_multi( ft.arb.sin(B[3]), \
+ (d.intervals_multi( (3 + ft.arb.sin(8*B[3])), ft.arb.cos(B[3]) ) \
+ 	+ 4* d.intervals_multi(ft.arb.sin(B[3]),  ft.arb.cos(8*B[3])))  )
+
+P244= lambda B: -6* d.intervals_multi(d.power_interval(ft.arb.sin(B[3]),2), (11*ft.arb.sin(8*B[3]) + 1) )+\
+2* d.intervals_multi(d.power_interval(ft.arb.cos(B[3]),2),(3+ft.arb.sin(8*B[3])) ) +\
+32*d.intervals_multi(d.intervals_multi(ft.arb.cos(B[3]), \
+	ft.arb.sin(B[3])), ft.arb.cos(8*B[3])   )
+
+P2444= lambda B:-8*(-6*d.intervals_multi((d.power_interval(ft.arb.cos(B[3]),2)),ft.arb.cos(8*B[3])) +\
+70*d.intervals_multi((d.power_interval(ft.arb.sin(B[3]),2)),ft.arb.cos(8*B[3])) +\
+d.intervals_multi(d.intervals_multi(ft.arb.cos(B[3]),ft.arb.sin(B[3])), \
+48*ft.arb.sin(B[3]) +3 ) )
+
+
+P34=lambda B: ft.arb(-1)
+
+
+JetP=[{(0,0,0,0):P1, (1,0,0,0): P11,(0,0,0,1): P14, (0,0,0,2):P144,(0,0,0,3):P1444  },\
+{(0,0,0,0):P2, (0,1,0,0): P11,(0,0,0,1): P24, (0,0,0,2):P244,(0,0,0,3):P2444  },\
+{(0,0,0,0):P3, (0,0,1,0):P11, (0,0,0,1):P34} ]
+ 
+
+U=[ft.arb(0.1,2),ft.arb(0.1,2),ft.arb(0.1,2),ft.arb(0.1,2),ft.arb(0.01,1),ft.arb(0.01,1),ft.arb(0.01,3)]
+
+Ball=fv.Ball_system(JetP,U)
+
+Jac=fv.Jacobian_of_Ball(JetP,U)
+
+print(Jac)  computing the jac of ball 
+
+############################################
+#draft#######################################
+#######################################
+
+"""
 x1= sp.Symbol('x1')
 x2= sp.Symbol('x2')
 x3= sp.Symbol('x3')
@@ -35,14 +102,6 @@ M=Matrix(d.matrixval(Ball_jacob,sol))
 pprint(M)
 #pprint(M[[0,2,3,4],0:4])
 input()
-
-
-
-
-
-
-
-
 
 
 B=[ft.arb(0,1),ft.arb(0,1),ft.arb(0,1),ft.arb(0,1)]
@@ -72,18 +131,7 @@ print(fv.curve_tracer(P,B,jac))
 
 
 P=[]
-
-
-
-
-
-
-
-
-
-
-
-
+"""
 ##############################
 #curve tracer function example
 ##############################
@@ -122,9 +170,9 @@ func_jac=lambda U: [ [Pij(U)  for Pij in Pi] for Pi in T   ]
 d.ftprint(fv.curve_tracer(func_P,B,func_jac)[0])
 
 
-#jac_func=lambda U: 
-
 """
+
+
 ##############################################
 #proving that the evaluation of  jac of ball #
 #converges to the eval at the solution########
@@ -183,8 +231,7 @@ for i in range(5):
 		if eval_jac_ball[i][j] not in ft.arb( func_Ball_jacob[i][j]) :
 			print('false')
         		
-#d.solver(Ball,Ball_jacob,U)
-input()
+
 d.ftprint(fv.func_solver(Ball_func,func_jac,U))
 
 """
@@ -201,8 +248,8 @@ r3= sp.Symbol('r3')
 r4= sp.Symbol('r4')
 t= sp.Symbol('t')
 X=[[x1,x2,x4],[r4],t]
-P1=x1-x4**2+1
-P2=x2-x4**3+x4
+P1=x1-x4**2
+P2=x2-x4**3
 
 
 
@@ -231,9 +278,16 @@ Ball_func.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[3])
 Ball_func.append(lambda U1: fv.Ball_system(Jet_P_func,U1)[4])
 
 
-d.ftprint(fv.func_solver(Ball_func,func_jac,U))
 
 
+#d.ftprint(fv.func_solver(Ball_func,func_jac,U))
+x=[ft.arb(0),ft.arb(0),ft.arb(0),ft.arb(1),ft.arb(0)]
+b=[Balli(x) for Balli in Ball_func]
+
+A=func_Ball_jacob= fv.Jacobian_of_Ball(Jet_P_func,x)
+
+
+print(d.hansen_hengupta(x,A,b,x,x))
 """
 ##############################
 #the solver with analytic maps

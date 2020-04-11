@@ -52,6 +52,6 @@ Ball=S+D+[r3**2+r4**2-1]
 Jac_ball=Matrix(Ball).jacobian(Matrix([*X[0],*X[1],X[2]]))	
 
 R=Jac_ball.subs([(x1,0),(x2,0),(x3,0),(x4,0),(t,0),(a11,0),(a21,0)])
-determin=R[[0,1,2,3,4,5,6],[0,1,2,3,4,5]].det()
+determin=R[[0,1,3,4,5,6],[0,1,3,4,5,6]].det()
 
-pprint((determin))
+pprint(factor(determin))

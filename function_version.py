@@ -74,9 +74,11 @@ def SD_Pi(JetPi,U): # JetPi (dictionary) is the jet of one function Pi
   else:
     n=int((len(U)+1)/2)
     Id_n=list(np.eye(n, dtype=int))
-    nablaP=[  JetPi[tuple(Ii)] for Ii in  Id_n ]  
+    zero_function=lambda U:0
+    nablaP=[JetPi[tuple(Ii)] if tuple(Ii) in JetPi else zero_function  for Ii in  Id_n ]  
     D_Pi=ft.arb(0)
     for i in range(len(Id_n)-2):
+
       D_Pi += d.intervals_multi(nablaP[i+2](U),U[n+i])
 
   return [S_Pi, D_Pi]
