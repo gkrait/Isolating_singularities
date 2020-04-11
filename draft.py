@@ -851,8 +851,8 @@ def ftprint(B,k=3):
       answer.append([Bi,Bi])
   print(answer)
  elif  type(B[0])==type([]):
-  pprint([[ [round(float(Bij.lower()),k),round(float(Bij.upper()),k) ] if \
-    type(Bij)==type(ft.arb(1)) else [Bij,Bij  ] for Bij in Bi ] for Bi in B ] )
+  pprint(Matrix([[ [round(float(Bij.lower()),k),round(float(Bij.upper()),k) ] if \
+    type(Bij)==type(ft.arb(1)) else [Bij,Bij  ] for Bij in Bi ] for Bi in B ] ))
 def hansen_hengupta(x_teld,A,b,x,z):   
     """
     It returns the output of Hansen Hengupta operator

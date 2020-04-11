@@ -12,7 +12,92 @@ import inspect
 import math
 from pprint import pprint
 
+x1= sp.Symbol('x1')
+x2= sp.Symbol('x2')
+x3= sp.Symbol('x3')
+x4= sp.Symbol('x4')
+r3= sp.Symbol('r3')
+r4= sp.Symbol('r4')
+t= sp.Symbol('t')
+X=[[x1,x2,x4],[r4],t]
 
+P1=lambda B: B[0]- d.intervals_multi(ft.arb.cos(B[2]),(3+d.power_interval(ft.arb.sin(B[2]),4)))+3
+P2=lambda B: B[1] - d.intervals_multi(d.power_interval(ft.arb.sin(B[2]),2),(3 + ft.arb.sin(8*B[2])))
+
+P=[P1,P2]
+B=[ft.arb(0),ft.arb(0),ft.arb(0)]
+
+P11=lambda B: ft.arb(1)
+P111=lambda B: ft.arb(0)
+
+P14=lambda B:  4* d.intervals_multi( d.power_interval(ft.arb.sin(B[2]),3 ), \
+ d.power_interval (ft.arb.cos(B[2]), 2) )\
+  -d.intervals_multi( (3 + d.power_interval(ft.arb.sin(B[2]),4)), ft.arb.sin(B[2]))
+
+P144=lambda B:  d.intervals_multi( cos(B[2]), (-13* d.power_interval( ft.arb.sin(B[2]),4) + \
+	12* d.intervals_multi(d.power_interval(ft.arb.sin(B[2]),2), d.power_interval(ft.arb.cos(B[2]),2)) - 3) )
+
+P1444=lambda B: d.intervals_multi( ft.arb.sin(B[2]), \
+ (13* d.power_interval(ft.arb.sin(B[2]),4) + 24* d.power_interval(ft.arb.cos(B[2]),4)\
+ -88*d.intervals_multi(d.power_interval(ft.arb.sin(B[2]),2), d.power_interval(ft.arb.cos(B[2]),2) )+ 3) )
+
+
+P24=lambda B:2* d.intervals_multi( ft.arb.sin(B[2]), \
+ (d.intervals_multi( (3 + ft.arb.sin(8*B[2])), ft.arb.cos(B[2]) ) \
+ 	+ 4* d.intervals_multi(ft.arb.sin(B[2]),  ft.arb.cos(8*B[2])))  )
+
+P244= lambda B: -6* d.intervals_multi(d.power_interval(ft.arb.sin(B[2]),2), (11*ft.arb.sin(8*B[2]) + 1) )+\
+2* d.intervals_multi(d.power_interval(ft.arb.cos(B[2]),2),(3+ft.arb.sin(8*B[2])) ) +\
+32*d.intervals_multi(d.intervals_multi(ft.arb.cos(B[2]), \
+	ft.arb.sin(B[2])), ft.arb.cos(8*B[2])   )
+
+P2444= lambda B:-8*(-6*d.intervals_multi((d.power_interval(ft.arb.cos(B[2]),2)),ft.arb.cos(8*B[2])) +\
+70*d.intervals_multi((d.power_interval(ft.arb.sin(B[2]),2)),ft.arb.cos(8*B[2])) +\
+d.intervals_multi(d.intervals_multi(ft.arb.cos(B[2]),ft.arb.sin(B[2])), \
+48*ft.arb.sin(B[2]) +3 ) )
+
+
+
+
+
+JetP=[{(0,0,0):P1, (1,0,0): P11,(0,0,1): P14, (0,0,2):P144,(0,0,3):P1444  },\
+{(0,0,0):P2, (0,1,0): P11,(0,0,1): P24, (0,0,2):P244,(0,0,3):P2444  } ]
+ 
+
+
+U=[ft.arb(-0.5003,0.5001),ft.arb(1.5003,1.55),ft.arb(0.03,1.05),ft.arb(1.0003,0.05),ft.arb(0.03,2.1)]
+#U=[ft.arb(0.00003,0.001),ft.arb(0.00003,0.001),ft.arb(0.00003,0.001),\
+#ft.arb(0.00003,0.001),ft.arb(0.707,0.001),ft.arb(0.707,0.001),ft.arb(0.000003,0.001)]
+
+
+
+
+Ball=fv.Ball_system(JetP,U)
+Jac=  fv.Jacobian_of_Ball(JetP,U)
+
+
+func_Ball=[lambda U1,i=i:fv.Ball_system(JetP,U1)[i] for i in range(len(Ball))]
+
+func_Jac=lambda U1:fv.Jacobian_of_Ball(JetP,U1)
+
+
+T=fv.func_solver(func_Ball,func_Jac,U)
+d.ftprint(T) 
+
+
+
+
+
+
+
+
+
+
+
+
+###########
+#solver##########
+"""
 x1= sp.Symbol('x1')
 x2= sp.Symbol('x2')
 x3= sp.Symbol('x3')
@@ -67,15 +152,25 @@ JetP=[{(0,0,0,0):P1, (1,0,0,0): P11,(0,0,0,1): P14, (0,0,0,2):P144,(0,0,0,3):P14
  
 
 
-U=[ft.arb(0.1,2),ft.arb(0.1,2),ft.arb(0.1,2),ft.arb(0.1,2),ft.arb(0.01,1),ft.arb(0.01,1),ft.arb(0.01,3)]
+U=[ft.arb(0.03,2),ft.arb(0.03,2),ft.arb(0.03,2),ft.arb(0.03,2),ft.arb(0.03,1),ft.arb(0.03,1),ft.arb(0.03,3)]
+#U=[ft.arb(0.00003,0.001),ft.arb(0.00003,0.001),ft.arb(0.00003,0.001),\
+#ft.arb(0.00003,0.001),ft.arb(0.707,0.001),ft.arb(0.707,0.001),ft.arb(0.000003,0.001)]
+
+
 
 
 Ball=fv.Ball_system(JetP,U)
+Jac=  fv.Jacobian_of_Ball(JetP,U)
 
 
-Jac=fv.Jacobian_of_Ball(JetP,U)
-print(Jac) 
+func_Ball=[lambda U1,i=i:fv.Ball_system(JetP,U1)[i] for i in range(len(Ball))]
 
+func_Jac=lambda U1:fv.Jacobian_of_Ball(JetP,U1)
+
+
+T=fv.func_solver(func_Ball,func_Jac,U)
+d.ftprint(T) 
+"""
 ############################################
 #draft#######################################
 #######################################

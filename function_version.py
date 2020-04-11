@@ -66,7 +66,9 @@ def poly_list_tofunc(P):
 
 def SD_Pi(JetPi,U): # JetPi (dictionary) is the jet of one function Pi
   n=int((len(U)+1)/2)
+
   Pi=JetPi[(0,)*n]
+
   S_Pi= 0.5*Pi(F_Ballplus(U))+0.5*Pi(F_Ballminus(U))
   if 0 not in U[2*n-2]:
 
@@ -110,8 +112,10 @@ def derivatives_of_SDPi(JetPi,U):
   D_nablaPi=[]
 
   for Jet_Pi_xj in Jet_nabla_Pi:
- Jet_nabla_Pi is not proper 
-    SD_Pi_xj=SD_Pi(Jet_Pi_xj,U)
+    if Jet_Pi_xj != {}:
+      SD_Pi_xj=SD_Pi(Jet_Pi_xj,U)
+    else:
+       SD_Pi_xj=[ft.arb(0),ft.arb(0)]
     S_nablaPi.append(SD_Pi_xj[0])
     D_nablaPi.append(SD_Pi_xj[1])
   
@@ -143,7 +147,7 @@ def derivatives_of_SDPi(JetPi,U):
           if s in JetPi:
             t=U[2*n-2]
             sqrt_of_t=extension_t(t)  #computing f'''(-sqrt(t),sqrt(t))
-            U_prime=[]
+            U_prime=U[:2]
             for i in range(2,n):
               U_prime.append(U[i]+d.intervals_multi(r[i-2],sqrt_of_t) )
             sum1 +=d.intervals_multi(JetPi[s](U_prime),ri_rj_rk) 
@@ -202,7 +206,13 @@ def func_solver(P,jac,B,k=2): #k is the number of parts in which every interval 
                    jac_eval_current_box=jac(current_box)
                    mid_box=[ft.arb(float(interval.mid()))  for interval in current_box]
                    b=[Pi(mid_box) for Pi in P] 
+                   print(d.width(current_box))
+                   print(len(L))
+                   #d.ftprint(jac_eval_current_box)
+                   #time.sleep(0.5)
                    if d.invertibility_of_a_matrix(jac_eval_current_box)==1:
+                    
+
                     Image_of_current_box=d.hansen_hengupta(mid_box,jac_eval_current_box,b,current_box,current_box)
                   
                     if Image_of_current_box !='empty':
