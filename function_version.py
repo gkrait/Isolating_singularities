@@ -201,30 +201,23 @@ def func_solver(P,jac,B,k=2): #k is the number of parts in which every interval 
              #L.remove(current_box)
              L=L[1:]
         
-        
         else:
                    jac_eval_current_box=jac(current_box)
                    mid_box=[ft.arb(float(interval.mid()))  for interval in current_box]
                    b=[Pi(mid_box) for Pi in P] 
-                   print(d.width(current_box))
-                   print(len(L))
-                   #d.ftprint(jac_eval_current_box)
-                   #time.sleep(0.5)
                    if d.invertibility_of_a_matrix(jac_eval_current_box)==1:
-                    
-
                     Image_of_current_box=d.hansen_hengupta(mid_box,jac_eval_current_box,b,current_box,current_box)
-                  
+
                     if Image_of_current_box !='empty':
                                     currecnt_box_contains_its_image=1
+                                    
                                     for i  in range(len(Image_of_current_box)):
                                           if  (Image_of_current_box[i]).lower() <= (current_box[i]).lower() or (Image_of_current_box[i]).upper() >= (current_box[i]).upper():
                                                 currecnt_box_contains_its_image=0
 
                                     if currecnt_box_contains_its_image==1 :
-                                          #print('Hi',Solutions)
+                    
                                           Solutions.append(Image_of_current_box)    
-                                          #L.remove(current_box)
                                           L=L[1:]
                           
                                     else:
@@ -237,7 +230,7 @@ def func_solver(P,jac,B,k=2): #k is the number of parts in which every interval 
                                                L=L[1:]
                                                L =   L +new_children
                                            except:
-                                               #L.remove(current_box)
+                                               
                                                L=L[1:]
                     else:
                           #L.remove(L[0])
@@ -252,11 +245,11 @@ def func_solver(P,jac,B,k=2): #k is the number of parts in which every interval 
 
                                                
 
-    #print(Solutions)
+
     return Solutions  
 
 
-def curve_tracer(P,B,jac,wth=0.001,wth2=1):  #returns all list of boxes that contains smooth parts of a curve and it stops if the curve is smooth
+def curve_tracer(P,B,jac,wth=0.001,wth2=0.01):  #returns all list of boxes that contains smooth parts of a curve and it stops if the curve is smooth
     list_of_boxes=[B]
     smoothness=1
     regular_boxes=[]
@@ -271,7 +264,8 @@ def curve_tracer(P,B,jac,wth=0.001,wth2=1):  #returns all list of boxes that con
                 list_of_boxes.remove(list_of_boxes[0])
                   #print("empty")
               else:
-                   eval_jac= jac(list_of_boxes[0]) 
+                   eval_jac= [[jacij(list_of_boxes[0]  ) for jacij in jaci] for \
+                   jaci in jac] 
                    full_rankness= d.checking_full_rank(eval_jac)
                    if   full_rankness ==1 and d.width(list_of_boxes[0])<wth2 :
 

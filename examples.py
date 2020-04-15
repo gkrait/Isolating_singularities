@@ -1,16 +1,26 @@
+
+import math
+from sympy import *
+from pprint import pprint
+import flint  as ft
+
+
+
 import draft as d
 import function_version as fv
 import matplotlib.pyplot as plt
 import numpy as np
-import flint  as ft
+import sys
+
 import sympy as sp
 from copy import copy, deepcopy
-import sys
 import time
-from sympy import *
+
 import inspect
-import math
-from pprint import pprint
+
+
+
+
 
 x1= sp.Symbol('x1')
 x2= sp.Symbol('x2')
@@ -29,6 +39,9 @@ B=[ft.arb(0),ft.arb(0),ft.arb(0)]
 
 P11=lambda B: ft.arb(1)
 P111=lambda B: ft.arb(0)
+
+
+
 
 P14=lambda B:  4* d.intervals_multi( d.power_interval(ft.arb.sin(B[2]),3 ), \
  d.power_interval (ft.arb.cos(B[2]), 2) )\
@@ -65,9 +78,9 @@ JetP=[{(0,0,0):P1, (1,0,0): P11,(0,0,1): P14, (0,0,2):P144,(0,0,3):P1444  },\
  
 
 
-U=[ft.arb(-0.5003,0.5001),ft.arb(1.5003,1.55),ft.arb(0.03,1.05),ft.arb(1.0003,0.05),ft.arb(0.03,2.1)]
-#U=[ft.arb(0.00003,0.001),ft.arb(0.00003,0.001),ft.arb(0.00003,0.001),\
-#ft.arb(0.00003,0.001),ft.arb(0.707,0.001),ft.arb(0.707,0.001),ft.arb(0.000003,0.001)]
+U=[ft.arb(-0.5003,0.5001),ft.arb(1.5003,1.55),ft.arb(0.03,1.05),ft.arb(1.0003,0.005),ft.arb(0.03,2.1)]
+U=[ft.arb(-1.5,1.51),ft.arb(1.5,1.51),ft.arb(0,2),\
+ft.arb(1.00000003,0.01),ft.arb(0,1.51)]
 
 
 
@@ -81,10 +94,41 @@ func_Ball=[lambda U1,i=i:fv.Ball_system(JetP,U1)[i] for i in range(len(Ball))]
 func_Jac=lambda U1:fv.Jacobian_of_Ball(JetP,U1)
 
 
-T=fv.func_solver(func_Ball,func_Jac,U)
-d.ftprint(T) 
 
 
+T=fv.func_solver(func_Ball,func_Jac,U,3)
+
+
+
+d.ftprint(T)
+
+
+"""
+
+jac_mat=[[P11,P111,P14], [P111,P11,P24]]
+B=[ft.arb(-2.5,2.5),ft.arb(2,2),ft.arb(0,5)]
+fig, ax = plt.subplots()
+plt.grid(True)
+ax.set_xlim(-5, 0)
+ax.set_ylim(0,4)
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+c=0
+
+
+for box in projection:
+    c+=1
+
+
+    rectangle= plt.Rectangle((float(box[0].lower()),float(box[1].lower()) ), \
+    	float(box[0].upper())-float(box[0].lower()),float(box[1].upper())-float(box[1].lower()), fc='g')
+    plt.gca().add_patch(rectangle)
+    #rectangle= plt.Rectangle((round(float(box[0].lower()),3), round(float(box[1].lower())),3), 2*float(box[0].rad()),2*float(box[1].rad()), fc='g')
+    #plt.gca().add_patch(rectangle)
+
+plt.show()
+
+"""
 
 
 
