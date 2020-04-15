@@ -11,7 +11,7 @@ import inspect
 import math
 from pprint import pprint
 import operator
-
+import random
 
 def compose(f, g):
     return lambda x: f(g(x))
@@ -178,12 +178,14 @@ def Jacobian_of_Ball(JetP,U):
   Ball.append(last_eq)
   return Ball
 
-def func_solver(P,jac,B,k=2): #k is the number of parts in which every interval is divided  
+def func_solver(P,jac,B,k=3): #k is the number of parts in which every interval is divided  
     it=0
     Solutions=[]
     L=[B]
     while len(L) !=0:
+        
         it=it+1
+
         current_box=L[0]  #evaluating P at the currecnt_box:
         value_of_P_current_box=[ Pi(current_box) for Pi in P ]
         solution_in_current_box=1
@@ -202,12 +204,18 @@ def func_solver(P,jac,B,k=2): #k is the number of parts in which every interval 
              L=L[1:]
         
         else:
+                   
                    jac_eval_current_box=jac(current_box)
                    mid_box=[ft.arb(float(interval.mid()))  for interval in current_box]
                    b=[Pi(mid_box) for Pi in P] 
                    if d.invertibility_of_a_matrix(jac_eval_current_box)==1:
-                    Image_of_current_box=d.hansen_hengupta(mid_box,jac_eval_current_box,b,current_box,current_box)
 
+                    Image_of_current_box=d.hansen_hengupta(mid_box,jac_eval_current_box,b,current_box,current_box)
+                    #d.ftprint(current_box)
+                    #print(Image_of_current_box)
+                    #input()
+                    
+  
                     if Image_of_current_box !='empty':
                                     currecnt_box_contains_its_image=1
                                     
@@ -216,8 +224,8 @@ def func_solver(P,jac,B,k=2): #k is the number of parts in which every interval 
                                                 currecnt_box_contains_its_image=0
 
                                     if currecnt_box_contains_its_image==1 :
-                    
                                           Solutions.append(Image_of_current_box)    
+
                                           L=L[1:]
                           
                                     else:
@@ -233,8 +241,8 @@ def func_solver(P,jac,B,k=2): #k is the number of parts in which every interval 
                                                
                                                L=L[1:]
                     else:
-                          #L.remove(L[0])
-                          L=L[1:]
+                          L.remove(L[0])
+                         
 
             
                    else:

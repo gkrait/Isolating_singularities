@@ -78,9 +78,9 @@ JetP=[{(0,0,0):P1, (1,0,0): P11,(0,0,1): P14, (0,0,2):P144,(0,0,3):P1444  },\
  
 
 
-U=[ft.arb(-0.5003,0.5001),ft.arb(1.5003,1.55),ft.arb(0.03,1.05),ft.arb(1.0003,0.005),ft.arb(0.03,2.1)]
-U=[ft.arb(-1.5,1.51),ft.arb(1.5,1.51),ft.arb(0,2),\
-ft.arb(1.00000003,0.01),ft.arb(0,1.51)]
+U=[ft.arb(-0.7013,0.01),ft.arb(1.5003,0.01),ft.arb(0.003,0.05),ft.arb(1.0003,0.005),ft.arb(0.61653,0.01)]
+#U=[ft.arb(-1.5,1.51),ft.arb(1.5,1.51),ft.arb(0,2),\
+#ft.arb(1.00000003,0.01),ft.arb(0,1.51)]
 
 
 
@@ -95,8 +95,7 @@ func_Jac=lambda U1:fv.Jacobian_of_Ball(JetP,U1)
 
 
 
-
-T=fv.func_solver(func_Ball,func_Jac,U,3)
+T=fv.func_solver(func_Ball,func_Jac,U,2)
 
 
 
