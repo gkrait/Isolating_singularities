@@ -36,12 +36,65 @@ P2=lambda B:  d.power_interval(B[0]-9-5*ft.arb.cos(B[2]),2)+ d.power_interval(B[
 P3=lambda B: (B[0]-8*ft.arb.cos(B[2]))*ft.arb.sin(B[2])-(16*(B[1]-8*ft.arb.sin(B[2])))*ft.arb.cos(B[2])*  \
 (B[0]-9-5*ft.arb.cos(B[3]))*ft.arb.sin(B[3])-(10*(B[1]-5*ft.arb.sin(B[3])))*ft.arb.cos(B[3])
 
+
+P=[P1,P2,P3]
+
 B=[ft.arb(0.2),ft.arb(0.2),ft.arb(0,1),ft.arb(0,1)]
 
-P1_x1=lambda B: B[0]-8*ft.arb.cos(B[2])
-P1_x2=lambda B: B[1]-8*ft.arb.sin(B[2])
-P1_q1=lambda B: (B[0]-8*ft.arb.cos(B[2]))*ft.arb.sin(B[2])-(16*(B[1]-8*ft.arb.sin(B[2])))*ft.arb.cos(B[2])
+P1_x1=lambda B: 2*B[0]-16*ft.arb.cos(B[2])
+P1_x2=lambda B: 2*B[1]-16*ft.arb.sin(B[2])
+P1_q1=lambda B: 16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - 16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2])
 P1_q2= lambda B :ft.arb(0)
+
+P2_x1=lambda B:2*B[0]-18-10*ft.arb.cos(B[3])
+P2_x2=lambda B: 2*B[1]-10*ft.arb.sin(B[3])
+P2_q1=lambda B: ft.arb(0)
+P2_q2=lambda B: 10*(B[0]-9-5*ft.arb.cos(B[3]))*ft.arb.sin(B[3])-(10*(B[1]-5*ft.arb.sin(B[3])))*ft.arb.cos(B[3])
+
+B=[ft.arb(0.2),ft.arb(0.2),ft.arb(0,2),ft.arb(0,2)]
+
+
+P3_x1=lambda B: 10*(16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) -\
+ 16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*((2*B[0] - 16*ft.arb.cos(B[2]))*\
+ (2*B[1] - 10*ft.arb.sin(B[3]))-(2*B[1] - 16*ft.arb.sin(B[2]))*(2*B[0] - 10*ft.arb.cos(B[3]) - \
+ 18))*ft.arb.sin(B[3])+(16*(B[0]-8*ft.arb.cos(B[2]))*ft.arb.sin(B[2])-16*(B[1] -\
+ 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*(-10*(B[1]-5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) +\
+ 10*(B[0]-5*ft.arb.cos(B[3])-9)*ft.arb.sin(B[3]))*(32*ft.arb.sin(B[2])-\
+ 20*ft.arb.sin(B[3]))+16*((2*B[0]-16*ft.arb.cos(B[2]))*(2*B[1]-10*ft.arb.sin(B[3])) -\
+ (2*B[1]-16*ft.arb.sin(B[2]))*(2*B[0]-10*ft.arb.cos(B[3])-18))*(-10*(B[1] - \
+ 	5*ft.arb.sin(B[3]))*ft.arb.cos(B[3])+10*(B[0]-5*ft.arb.cos(B[3])-9)*\
+ ft.arb.sin(B[3]))*ft.arb.sin(B[2])
+
+
+P3_x2=lambda B: -10*(16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) -\
+16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*((2*B[0] - 16*ft.arb.cos(B[2]))\
+*(2*B[1] - 10*ft.arb.sin(B[3])) - (2*B[1] - 16*ft.arb.sin(B[2]))*(2*B[0] - \
+	10*ft.arb.cos(B[3]) - 18))*ft.arb.cos(B[3]) + (16*(B[0] - 8*ft.arb.cos(B[2]))*\
+ft.arb.sin(B[2]) - 16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*(-10*(B[1] - \
+	5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) + 10*(B[0] - 5*ft.arb.cos(B[3]) - 9)*\
+ft.arb.sin(B[3]))*(-32*ft.arb.cos(B[2]) + 20*ft.arb.cos(B[3]) + 36) - 16*((2*B[0] -\
+ 16*ft.arb.cos(B[2]))*(2*B[1] - 10*ft.arb.sin(B[3])) - (2*B[1] - 16*ft.arb.sin(B[2]))*\
+(2*B[0] - 10*ft.arb.cos(B[3]) - 18))*(-10*(B[1] - 5*ft.arb.sin(B[3]))*\
+ft.arb.cos(B[3]) + 10*(B[0] - 5*ft.arb.cos(B[3]) - 9)*ft.arb.sin(B[3]))*ft.arb.cos(B[2])
+
+P3_q1=lambda B:  (16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - 16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*(-10*(B[1] - 5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) + 10*(B[0] - 5*ft.arb.cos(B[3]) - 9)*ft.arb.sin(B[3]))*(16*(2*B[1] - 10*ft.arb.sin(B[3]))*ft.arb.sin(B[2]) + 16*(2*B[0] - 10*ft.arb.cos(B[3]) - 18)*ft.arb.cos(B[2])) + ((2*B[0] - 16*ft.arb.cos(B[2]))*(2*B[1] - 10*ft.arb.sin(B[3])) - (2*B[1] - 16*ft.arb.sin(B[2]))*(2*B[0] - 10*ft.arb.cos(B[3]) - 18))*(-10*(B[1] - 5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) + 10*(B[0] - 5*ft.arb.cos(B[3]) - 9)*ft.arb.sin(B[3]))*((16*B[0] - 128*ft.arb.cos(B[2]))*ft.arb.cos(B[2]) - (-16*B[1] + 128*ft.arb.sin(B[2]))*ft.arb.sin(B[2]) + 128*d.power_interval(ft.arb.sin(B[2]),2) + 128*d.power_interval(ft.arb.cos(B[2]),2))
+
+
+P3_q2=lambda B: (16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - 16*(B[1] - \
+ 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*((2*B[0] - 16*ft.arb.cos(B[2]))*(2*B[1] -\
+  10*ft.arb.sin(B[3])) - (2*B[1] - 16*ft.arb.sin(B[2]))*(2*B[0] - 10*ft.arb.cos(B[3])\
+   - 18))*(-(-10*B[1] + 50*ft.arb.sin(B[3]))*ft.arb.sin(B[3]) + (10*B[0] - \
+   50*ft.arb.cos(B[3]) - 90)*ft.arb.cos(B[3]) + 50*d.power_interval(ft.arb.sin(B[3]),2) +\
+    50*ft.arb.cos(B[3])**2) + (16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - \
+    16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*(-10*(2*B[0] - \
+    	16*ft.arb.cos(B[2]))*ft.arb.cos(B[3]) + 10*(-2*B[1] + 16*ft.arb.sin(B[2]))*\
+    ft.arb.sin(B[3]))*(-10*(B[1] - 5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) + 10*(B[0] -\
+     5*ft.arb.cos(B[3]) - 9)*ft.arb.sin(B[3]))
+
+jac=[[P1_x1,P1_x2,P1_q1,P1_q2],[P2_x1,P2_x2,P2_q1,P2_q2],[P3_x1,P3_x2,P3_q1,P3_q2]]
+
+
+print(fv.curve_tracer(P,B,jac,wth=0.0001,wth2=0.001))
 
 
 ############################################################
