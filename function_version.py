@@ -71,7 +71,6 @@ def SD_Pi(JetPi,U): # JetPi (dictionary) is the jet of one function Pi
 
   S_Pi= 0.5*Pi(F_Ballplus(U))+0.5*Pi(F_Ballminus(U))
   if 0 not in U[2*n-2]:
-
     D_Pi=(Pi(F_Ballplus(U))-Pi(F_Ballminus(U)))/(2*sqrt_t(U[2*n-2]))
   else:
     n=int((len(U)+1)/2)
@@ -84,6 +83,7 @@ def SD_Pi(JetPi,U): # JetPi (dictionary) is the jet of one function Pi
       D_Pi += d.intervals_multi(nablaP[i+2](U),U[n+i])
 
   return [S_Pi, D_Pi]
+
 def Ball_system(JetP,U):
   S_func=[]
   D_func=[]
@@ -96,7 +96,44 @@ def Ball_system(JetP,U):
   last_eq=sum( [d.power_interval(Ui,2) for Ui in U[n:2*n-2] ] )-ft.arb(1) 
   Ball.append(last_eq)
   return Ball
+
+def Alternative_SD_Pi(JetPi,U): # JetPi (dictionary) is the jet of one function Pi
+  n=int((len(U)+1)/2)
+  Pi=JetPi[(0,)*n]
+  try:
+    S_Pi= Pi(F_Ballplus(U)).intersection(-Pi(F_Ballminus(U)))
+  except:
+    S_Pi=ft.arb(1)
+  if 0 not in U[2*n-2]:
+    try:
+      D_Pi= Pi(F_Ballplus(U)).intersection(Pi(F_Ballminus(U)))
+    except:
+     D_Pi=ft.arb(1) 
     
+  else:
+    n=int((len(U)+1)/2)
+    Id_n=list(np.eye(n, dtype=int))
+    zero_function=lambda U:0
+    nablaP=[JetPi[tuple(Ii)] if tuple(Ii) in JetPi else zero_function  for Ii in  Id_n ]  
+    D_Pi=ft.arb(0)
+    for i in range(len(Id_n)-2):
+
+      D_Pi += d.intervals_multi(nablaP[i+2](U),U[n+i])
+  return [S_Pi,D_Pi]
+
+def Alternative_Ball_system(JetP,U):
+  S_func=[]
+  D_func=[]
+  n=int((len(U)+1)/2)
+  for i in range(n-1):
+     SDPi=Alternative_SD_Pi(JetP[i],U)
+     S_func.append(SDPi[0])
+     D_func.append(SDPi[1])
+  Ball=S_func+ D_func
+  last_eq=sum( [d.power_interval(Ui,2) for Ui in U[n:2*n-2] ] )-ft.arb(1) 
+  Ball.append(last_eq)
+  return Ball
+  
 def derivatives_of_SDPi(JetPi,U):
 
   n=int((len(U)+1)/2)
@@ -178,18 +215,20 @@ def Jacobian_of_Ball(JetP,U):
   Ball.append(last_eq)
   return Ball
 
-def func_solver(P,jac,B,k=3): #k is the number of parts in which every interval is divided  
+def func_solver(P,P_alt,jac,B,k=3): #k is the number of parts in which every interval is divided  
     it=0
     Solutions=[]
     L=[B]
+    qq=1
     while len(L) !=0:
         
         it=it+1
-
         current_box=L[0]  #evaluating P at the currecnt_box:
-        value_of_P_current_box=[ Pi(current_box) for Pi in P ]
+
+        value_of_P_current_box=[ Pi(current_box) for Pi in P_alt ]
         solution_in_current_box=1
         for value in value_of_P_current_box:  #checking whether the box has no solution
+
             try:                    # notice that if value ==0 then a TypeError occurs
                if 0 not in (ft.arb(1)*(value)):
                  solution_in_current_box=0
@@ -197,11 +236,17 @@ def func_solver(P,jac,B,k=3): #k is the number of parts in which every interval 
             except TypeError:
                  if value !=0:
                       solution_in_current_box=0
-                      break            
-
+                      break  
+        if qq==0 and solution_in_current_box==1:                        
+         """d.ftprint(current_box,5)
+         d.ftprint(value_of_P_current_box,5)
+         d.ftprint(jac_eval_current_box)
+         print(len(L))
+         input() """   
         if solution_in_current_box==0:
              #L.remove(current_box)
              L=L[1:]
+        
         
         else:
                    
@@ -211,9 +256,7 @@ def func_solver(P,jac,B,k=3): #k is the number of parts in which every interval 
                    if d.invertibility_of_a_matrix(jac_eval_current_box)==1:
 
                     Image_of_current_box=d.hansen_hengupta(mid_box,jac_eval_current_box,b,current_box,current_box)
-                    #d.ftprint(current_box)
-                    #print(Image_of_current_box)
-                    #input()
+
                     
   
                     if Image_of_current_box !='empty':
@@ -221,13 +264,16 @@ def func_solver(P,jac,B,k=3): #k is the number of parts in which every interval 
                                     
                                     for i  in range(len(Image_of_current_box)):
                                           if  (Image_of_current_box[i]).lower() <= (current_box[i]).lower() or (Image_of_current_box[i]).upper() >= (current_box[i]).upper():
+                                                
                                                 currecnt_box_contains_its_image=0
+                                    
 
                                     if currecnt_box_contains_its_image==1 :
-                                          Solutions.append(Image_of_current_box)    
+                                          Solutions.append(Image_of_current_box)
 
                                           L=L[1:]
-                          
+                                          qq=0
+
                                     else:
                                            try:    # to check whether the intersection of current_box with its image (Image_of_current_box) is non empty
                                                for i in range(len(current_box)):

@@ -31,6 +31,23 @@ r4= sp.Symbol('r4')
 t= sp.Symbol('t')
 X=[[x1,x2,x4],[r4],t]
 
+P1=lambda B: d.power_interval(B[0]-8*ft.arb.cos(B[2]),2)+ d.power_interval(B[1]-8*ft.arb.sin(B[2]),2)-25
+P2=lambda B:  d.power_interval(B[0]-9-5*ft.arb.cos(B[2]),2)+ d.power_interval(B[1]-5*ft.arb.sin(B[3]),2)-64
+P3=lambda B: (B[0]-8*ft.arb.cos(B[2]))*ft.arb.sin(B[2])-(16*(B[1]-8*ft.arb.sin(B[2])))*ft.arb.cos(B[2])*  \
+(B[0]-9-5*ft.arb.cos(B[3]))*ft.arb.sin(B[3])-(10*(B[1]-5*ft.arb.sin(B[3])))*ft.arb.cos(B[3])
+
+B=[ft.arb(0.2),ft.arb(0.2),ft.arb(0,1),ft.arb(0,1)]
+
+P1_x1=lambda B: B[0]-8*ft.arb.cos(B[2])
+P1_x2=lambda B: B[1]-8*ft.arb.sin(B[2])
+P1_q1=lambda B: (B[0]-8*ft.arb.cos(B[2]))*ft.arb.sin(B[2])-(16*(B[1]-8*ft.arb.sin(B[2])))*ft.arb.cos(B[2])
+P1_q2= lambda B :ft.arb(0)
+
+
+############################################################
+## Solver with analytic functions.. it works but slowly ####
+############################################################
+"""
 P1=lambda B: B[0]- d.intervals_multi(ft.arb.cos(B[2]),(3+d.power_interval(ft.arb.sin(B[2]),4)))+3
 P2=lambda B: B[1] - d.intervals_multi(d.power_interval(ft.arb.sin(B[2]),2),(3 + ft.arb.sin(8*B[2])))
 
@@ -78,34 +95,54 @@ JetP=[{(0,0,0):P1, (1,0,0): P11,(0,0,1): P14, (0,0,2):P144,(0,0,3):P1444  },\
  
 
 
-U=[ft.arb(-0.7013,0.01),ft.arb(1.5003,0.01),ft.arb(0.003,0.05),ft.arb(1.0003,0.005),ft.arb(0.61653,0.01)]
+U=[ft.arb(-1,1.1),ft.arb(1,1.1),ft.arb(0,1),ft.arb(1,0.000005),ft.arb(1,1.01)]
 #U=[ft.arb(-1.5,1.51),ft.arb(1.5,1.51),ft.arb(0,2),\
 #ft.arb(1.00000003,0.01),ft.arb(0,1.51)]
 
 
-
-
 Ball=fv.Ball_system(JetP,U)
-Jac=  fv.Jacobian_of_Ball(JetP,U)
+Jac= fv.Jacobian_of_Ball(JetP,U)
 
 
 func_Ball=[lambda U1,i=i:fv.Ball_system(JetP,U1)[i] for i in range(len(Ball))]
-
+func_Ball_alt=[lambda U1,i=i:fv.Alternative_Ball_system(JetP,U1)[i] for i in range(len(Ball))]
 func_Jac=lambda U1:fv.Jacobian_of_Ball(JetP,U1)
 
 
-
-T=fv.func_solver(func_Ball,func_Jac,U,2)
-
+T=fv.func_solver(func_Ball,func_Ball_alt,func_Jac,U,3)
 
 
-d.ftprint(T)
 
+print(T)
 
 """
 
-jac_mat=[[P11,P111,P14], [P111,P11,P24]]
+
+
+########################################
+### path tracer example by analytic functions &bout 7 minutes
+##############################################
+"""
+P1=lambda B: B[0]- d.intervals_multi(ft.arb.cos(B[2]),(3+d.power_interval(ft.arb.sin(B[2]),4)))+3
+P2=lambda B: B[1] - d.intervals_multi(d.power_interval(ft.arb.sin(B[2]),2),(3 + ft.arb.sin(8*B[2])))
+P=[P1,P2]
+#defining the Jacobian
+P1_x=lambda B: ft.arb(1)
+P1_xx=lambda B: ft.arb(0)
+P1_z=lambda B:  4* d.intervals_multi( d.power_interval(ft.arb.sin(B[2]),3 ), \
+ d.power_interval (ft.arb.cos(B[2]), 2) )\
+  -d.intervals_multi( (3 + d.power_interval(ft.arb.sin(B[2]),4)), ft.arb.sin(B[2]))
+P2_z=lambda B:2* d.intervals_multi( ft.arb.sin(B[2]), \
+ (d.intervals_multi( (3 + ft.arb.sin(8*B[2])), ft.arb.cos(B[2]) ) \
+ 	+ 4* d.intervals_multi(ft.arb.sin(B[2]),  ft.arb.cos(8*B[2])))  )
+
 B=[ft.arb(-2.5,2.5),ft.arb(2,2),ft.arb(0,5)]
+jac_mat=[[P1_x,P1_xx,P1_z],[P1_xx,P1_x,P2_z]]
+T=fv.curve_tracer(P,B,jac_mat)
+
+projection=[Ti[:2] for Ti in T[0]]
+
+
 fig, ax = plt.subplots()
 plt.grid(True)
 ax.set_xlim(-5, 0)
@@ -116,28 +153,17 @@ c=0
 
 
 for box in projection:
-    c+=1
-
-
     rectangle= plt.Rectangle((float(box[0].lower()),float(box[1].lower()) ), \
     	float(box[0].upper())-float(box[0].lower()),float(box[1].upper())-float(box[1].lower()), fc='g')
     plt.gca().add_patch(rectangle)
-    #rectangle= plt.Rectangle((round(float(box[0].lower()),3), round(float(box[1].lower())),3), 2*float(box[0].rad()),2*float(box[1].rad()), fc='g')
-    #plt.gca().add_patch(rectangle)
 
 plt.show()
 
+
+
+
+
 """
-
-
-
-
-
-
-
-
-
-
 ###########
 #solver##########
 """
