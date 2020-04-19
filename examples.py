@@ -39,7 +39,6 @@ P3=lambda B: (B[0]-8*ft.arb.cos(B[2]))*ft.arb.sin(B[2])-(16*(B[1]-8*ft.arb.sin(B
 
 P=[P1,P2,P3]
 
-B=[ft.arb(0.2),ft.arb(0.2),ft.arb(0,1),ft.arb(0,1)]
 
 P1_x1=lambda B: 2*B[0]-16*ft.arb.cos(B[2])
 P1_x2=lambda B: 2*B[1]-16*ft.arb.sin(B[2])
@@ -51,9 +50,10 @@ P2_x2=lambda B: 2*B[1]-10*ft.arb.sin(B[3])
 P2_q1=lambda B: ft.arb(0)
 P2_q2=lambda B: 10*(B[0]-9-5*ft.arb.cos(B[3]))*ft.arb.sin(B[3])-(10*(B[1]-5*ft.arb.sin(B[3])))*ft.arb.cos(B[3])
 
-B=[ft.arb(0.2),ft.arb(0.2),ft.arb(0,2),ft.arb(0,2)]
-
-
+B=[ft.arb(2,1),ft.arb(2,1),ft.arb(2,1),ft.arb(2,1)]
+B=[ft.arb(2,1),ft.arb(2,1),ft.arb(0,1),ft.arb(0,1)]
+B=[ft.arb(2,1),ft.arb(2,1),ft.arb(2.5,0.5),ft.arb(2.5,0.5)]
+B=[ft.arb(2,1),ft.arb(2,1),ft.arb(0,3),ft.arb(0,3)]
 P3_x1=lambda B: 10*(16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) -\
  16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*((2*B[0] - 16*ft.arb.cos(B[2]))*\
  (2*B[1] - 10*ft.arb.sin(B[3]))-(2*B[1] - 16*ft.arb.sin(B[2]))*(2*B[0] - 10*ft.arb.cos(B[3]) - \
@@ -94,7 +94,40 @@ P3_q2=lambda B: (16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - 16*(B[1] - \
 jac=[[P1_x1,P1_x2,P1_q1,P1_q2],[P2_x1,P2_x2,P2_q1,P2_q2],[P3_x1,P3_x2,P3_q1,P3_q2]]
 
 
-print(fv.curve_tracer(P,B,jac,wth=0.0001,wth2=0.001))
+
+U0=[d.ftconstructor(2.303, 2.306), d.ftconstructor(2.771, 2.774),\
+ d.ftconstructor(1.324, 1.34), d.ftconstructor(2.818, 2.825)]
+this box might have a singular point 
+
+
+m=[(Ui.mid()) for Ui in U0]
+T=[[Pij(U0) for Pij in Pi] for Pi in jac]
+M=[[Pij(m) for Pij in Pi] for Pi in jac]
+print(Matrix(M).rank())
+
+input()
+
+T=fv.curve_tracer(P,B,jac,wth=0.0001,wth2=0.001)
+
+projection=[Ti[:2] for Ti in T[0]]
+
+
+fig, ax = plt.subplots()
+plt.grid(True)
+ax.set_xlim(1, 3)
+ax.set_ylim(1,3)
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+c=0
+
+
+for box in projection:
+    rectangle= plt.Rectangle((float(box[0].lower()),float(box[1].lower()) ), \
+    	float(box[0].upper())-float(box[0].lower()),float(box[1].upper())-float(box[1].lower()), fc='g')
+    plt.gca().add_patch(rectangle)
+
+plt.show()
+
 
 
 ############################################################

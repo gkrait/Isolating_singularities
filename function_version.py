@@ -309,6 +309,7 @@ def curve_tracer(P,B,jac,wth=0.001,wth2=0.01):  #returns all list of boxes that 
     regular_boxes=[]
     smoothness=1
     while len(list_of_boxes)!=0 and d.width(list_of_boxes[0])> wth:
+              d.ftprint(list_of_boxes[0])
               membership=1
               eval_P=[Pi(list_of_boxes[0]) for Pi in P]           #checking whether the box contains a point of the curve
               for eval_Pi_at_B in eval_P:
@@ -321,13 +322,14 @@ def curve_tracer(P,B,jac,wth=0.001,wth2=0.01):  #returns all list of boxes that 
                    
                    eval_jac= [[jacij(list_of_boxes[0]  ) for jacij in jaci] for \
                    jaci in jac] 
-                   print(eval_jac)
-                   input()
+
                    full_rankness= d.checking_full_rank(eval_jac)
                    if   full_rankness ==1 and d.width(list_of_boxes[0])<wth2 :
 
+                        
                         regular_boxes.append(list_of_boxes[0])
                         list_of_boxes.remove(list_of_boxes[0])
+
                    else:
 
                         new_children=d.subdivide(list_of_boxes[0])
@@ -336,7 +338,7 @@ def curve_tracer(P,B,jac,wth=0.001,wth2=0.01):  #returns all list of boxes that 
     if len(list_of_boxes)!=0:
       smoothness=-1                    
       #print(list_of_boxes[0])
-    return [len(regular_boxes),len(list_of_boxes)]
+    return [regular_boxes,list_of_boxes]
 
 def box_membership(B1,B2):
     comparing=8
