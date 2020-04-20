@@ -3,9 +3,6 @@ import math
 from sympy import *
 from pprint import pprint
 import flint  as ft
-
-
-
 import draft as d
 import function_version as fv
 import matplotlib.pyplot as plt
@@ -17,6 +14,7 @@ from copy import copy, deepcopy
 import time
 
 import inspect
+import pickle 
 
 
 
@@ -50,10 +48,6 @@ P2_x2=lambda B: 2*B[1]-10*ft.arb.sin(B[3])
 P2_q1=lambda B: ft.arb(0)
 P2_q2=lambda B: 10*(B[0]-9-5*ft.arb.cos(B[3]))*ft.arb.sin(B[3])-(10*(B[1]-5*ft.arb.sin(B[3])))*ft.arb.cos(B[3])
 
-B=[ft.arb(2,1),ft.arb(2,1),ft.arb(2,1),ft.arb(2,1)]
-B=[ft.arb(2,1),ft.arb(2,1),ft.arb(0,1),ft.arb(0,1)]
-B=[ft.arb(2,1),ft.arb(2,1),ft.arb(2.5,0.5),ft.arb(2.5,0.5)]
-B=[ft.arb(2,1),ft.arb(2,1),ft.arb(0,3),ft.arb(0,3)]
 P3_x1=lambda B: 10*(16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) -\
  16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*((2*B[0] - 16*ft.arb.cos(B[2]))*\
  (2*B[1] - 10*ft.arb.sin(B[3]))-(2*B[1] - 16*ft.arb.sin(B[2]))*(2*B[0] - 10*ft.arb.cos(B[3]) - \
@@ -90,32 +84,73 @@ P3_q2=lambda B: (16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - 16*(B[1] - \
     	16*ft.arb.cos(B[2]))*ft.arb.cos(B[3]) + 10*(-2*B[1] + 16*ft.arb.sin(B[2]))*\
     ft.arb.sin(B[3]))*(-10*(B[1] - 5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) + 10*(B[0] -\
      5*ft.arb.cos(B[3]) - 9)*ft.arb.sin(B[3]))
+B=[ft.arb(2,1),ft.arb(2,1),ft.arb(2,1),ft.arb(2,1)] #not empty
+B=[ft.arb(2,1),ft.arb(2,1),ft.arb(0,1),ft.arb(0,1)]
+B=[ft.arb(2,1),ft.arb(2,1),ft.arb(2.5,0.5),ft.arb(2.5,0.5)]
+B=[ft.arb(2,1),ft.arb(2,1),ft.arb(0,3),ft.arb(0,3)]
+B=[ft.arb(0,1),ft.arb(4,1),ft.arb(2,1),ft.arb(2,1)]
+B=[ft.arb(0,1),ft.arb(4,1),ft.arb(0,1),ft.arb(2,1)]
+B=[ft.arb(0,1),ft.arb(4,1),ft.arb(0,1),ft.arb(0,1)]
+B=[ft.arb(0,1),ft.arb(4,1),ft.arb(4,1),ft.arb(4,1)]
+B=[ft.arb(0,1),ft.arb(4,1),ft.arb(4,1),ft.arb(0,1)]
+B=[ft.arb(2,1),ft.arb(2,1),ft.arb(0,3),ft.arb(0,3)] #not empty
+B=[ft.arb(4,1),ft.arb(1.5,1),ft.arb(0,3),ft.arb(0,3)] # 6 minutes robot 4 boxes
+B=[ft.arb(4.75,1),ft.arb(0.5,1),ft.arb(0,3),ft.arb(0,3)] #65 minutes boxes2
+
 
 jac=[[P1_x1,P1_x2,P1_q1,P1_q2],[P2_x1,P2_x2,P2_q1,P2_q2],[P3_x1,P3_x2,P3_q1,P3_q2]]
 
 
-
+"""
 U0=[d.ftconstructor(2.303, 2.306), d.ftconstructor(2.771, 2.774),\
  d.ftconstructor(1.324, 1.34), d.ftconstructor(2.818, 2.825)]
-this box might have a singular point 
-
-
 m=[(Ui.mid()) for Ui in U0]
-T=[[Pij(U0) for Pij in Pi] for Pi in jac]
+T=[[Pij(U0) for Pij in Pi ] for Pi in jac]
 M=[[Pij(m) for Pij in Pi] for Pi in jac]
-print(Matrix(M).rank())
-
+print(d.checking_full_rank(T))
 input()
 
-T=fv.curve_tracer(P,B,jac,wth=0.0001,wth2=0.001)
+l1=time.time()
+T=fv.curve_tracer(P,B,jac,wth=0.01,wth2=0.01)
+T1=[ [[ float(Tij.lower()),float(Tij.upper()) ] for Tij in Ti  ] for Ti in T[0]]
+T2=[ [[ float(Tij.lower()),float(Tij.upper()) ] for Tij in Ti  ] for Ti in T[1]]
+"""
 
-projection=[Ti[:2] for Ti in T[0]]
+"""
+pickle_out=open("boxes3","wb")
+pickle.dump([T1,T2],pickle_out)
+pickle_out.close()
+print(len(T[1]))
+"""
+
+redump again boxes2 
+
+pickle_in=open("boxes2","rb")
+T=pickle.load(pickle_in)
+
+
+print(T[1][0][2])
+input()
+boxes=[]
+for i in range(len(T[1])):
+	boxes.append([d.ftconstructor(T[1][i][2][0],T[1][i][2][1]),\
+		d.ftconstructor(T[1][i][3][0],T[1][i][3][1])])
+
+
+
+
+	
+
+
+
+
+projection= boxes[:] #[Ti[2:] for Ti in T[0]]
 
 
 fig, ax = plt.subplots()
 plt.grid(True)
-ax.set_xlim(1, 3)
-ax.set_ylim(1,3)
+ax.set_xlim(3.75, 5.75)
+ax.set_ylim(-0.5,1.5)
 ax.set_xlabel('x')
 ax.set_ylabel('y')
 c=0
@@ -125,6 +160,8 @@ for box in projection:
     rectangle= plt.Rectangle((float(box[0].lower()),float(box[1].lower()) ), \
     	float(box[0].upper())-float(box[0].lower()),float(box[1].upper())-float(box[1].lower()), fc='g')
     plt.gca().add_patch(rectangle)
+
+print(time.time())
 
 plt.show()
 
