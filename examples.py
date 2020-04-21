@@ -87,10 +87,7 @@ P3_q2=lambda B: (16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - 16*(B[1] - \
 
 
 
-B=[ft.arb(2.5,2.5),ft.arb(2.5,2.5),ft.arb(0,3),ft.arb(0,3)] #boxes width 0.01
-B=[ft.arb(7.5,2.5),ft.arb(-2.5,2.5),ft.arb(0,3),ft.arb(0,3)]
-B=[ft.arb(2.5,2.5),ft.arb(-7.5,2.5),ft.arb(0,3),ft.arb(0,3)] # boxes3 30 minutes
-B=[ft.arb(7.5,2.5),ft.arb(-7.5,2.5),ft.arb(0,3),ft.arb(0,3)]
+B=[ft.arb(-2.5,2.5),ft.arb(-2.5,2.5),ft.arb(0,3),ft.arb(0,3)]
 
 jac=[[P1_x1,P1_x2,P1_q1,P1_q2],[P2_x1,P2_x2,P2_q1,P2_q2],[P3_x1,P3_x2,P3_q1,P3_q2]]
 
@@ -106,7 +103,7 @@ input()
 """
 
 
-"""
+
 l1=time.time()
 T=fv.curve_tracer(P,B,jac)
 
@@ -114,21 +111,38 @@ T=fv.curve_tracer(P,B,jac)
 T1=[ [[ float(Tij.lower()),float(Tij.upper()) ] for Tij in Ti  ] for Ti in T[0]]
 T2=[ [[ float(Tij.lower()),float(Tij.upper()) ] for Tij in Ti  ] for Ti in T[1]]
 
-pickle_out=open("boxes11","wb")
+pickle_out=open("boxes12","wb")
 pickle.dump([T1,T2],pickle_out)
 pickle_out.close()
 
 
 projection=[Ti[:2]  for Ti in T[0]]
 
+fig, ax = plt.subplots()
+plt.grid(True)
+ax.set_xlim(-20, 20)
+ax.set_ylim(-20,20)
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+c=0
+
+
+for box in projection:
+    rectangle= plt.Rectangle((float(box[0].lower()),float(box[1].lower()) ), \
+    	float(box[0].upper())-float(box[0].lower()),float(box[1].upper())-float(box[1].lower()), fc='g')
+    plt.gca().add_patch(rectangle)
+
+print(time.time())
+print(l1)
+plt.show()
+
+
+
+
+
 
 
 """
-
-
-
-
-
 projection=[]
 S=["boxes","boxes1","boxes2","boxes3","boxes4","boxes5","boxes6","boxes7","boxes8","boxes9","boxes10","boxes11"]
 for Si in S:
@@ -160,7 +174,7 @@ print(time.time())
 #print(l1)
 plt.show()
 
-
+"""
 
 ############################################################
 ## Solver with analytic functions.. it works but slowly ####
