@@ -87,7 +87,7 @@ P3_q2=lambda B: (16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - 16*(B[1] - \
 
 
 
-B=[ft.arb(-2.5,2.5),ft.arb(-2.5,2.5),ft.arb(0,3),ft.arb(0,3)]
+B=[ft.arb(-7.5,2.5),ft.arb(-7.5,2.5),ft.arb(0,3),ft.arb(0,3)]
 
 jac=[[P1_x1,P1_x2,P1_q1,P1_q2],[P2_x1,P2_x2,P2_q1,P2_q2],[P3_x1,P3_x2,P3_q1,P3_q2]]
 
@@ -103,7 +103,7 @@ input()
 """
 
 
-
+"""
 l1=time.time()
 T=fv.curve_tracer(P,B,jac)
 
@@ -111,11 +111,11 @@ T=fv.curve_tracer(P,B,jac)
 T1=[ [[ float(Tij.lower()),float(Tij.upper()) ] for Tij in Ti  ] for Ti in T[0]]
 T2=[ [[ float(Tij.lower()),float(Tij.upper()) ] for Tij in Ti  ] for Ti in T[1]]
 
-pickle_out=open("boxes12","wb")
+pickle_out=open("boxes28","wb")
 pickle.dump([T1,T2],pickle_out)
 pickle_out.close()
 
-
+print(len(T[1]))
 projection=[Ti[:2]  for Ti in T[0]]
 
 fig, ax = plt.subplots()
@@ -136,25 +136,30 @@ print(time.time())
 print(l1)
 plt.show()
 
-
-
-
-
-
-
 """
+
+
+
+
+
+
 projection=[]
-S=["boxes","boxes1","boxes2","boxes3","boxes4","boxes5","boxes6","boxes7","boxes8","boxes9","boxes10","boxes11"]
+S=["boxes","boxes1","boxes2","boxes3","boxes4","boxes5","boxes6","boxes7",\
+"boxes8","boxes9","boxes10","boxes11","boxes12","boxes13","boxes14","boxes15",\
+"boxes16","boxes17","boxes18","boxes19","boxes20","boxes21","boxes22","boxes23",\
+"boxes24","boxes25","boxes26","boxes27","boxes28"]
 for Si in S:
  
 	pickle_in=open(Si,"rb")
 	T=pickle.load(pickle_in)
 	pickle_in.close()
-	boxes=[]
-	for i in range(len(T[0])):
-		boxes.append([d.ftconstructor(T[0][i][0][0],T[0][i][0][1]),\
-		d.ftconstructor(T[0][i][1][0],T[0][i][1][1])])
-	projection += boxes		
+	if len(T[1])==0 and len(T[0]) !=0:
+	 boxes=[]
+	 for i in range(len(T[0])):
+	 	boxes.append([d.ftconstructor(T[0][i][0][0],T[0][i][0][1]),\
+			d.ftconstructor(T[0][i][1][0],T[0][i][1][1])])
+	 projection += boxes		
+			
 
 fig, ax = plt.subplots()
 plt.grid(True)
@@ -174,7 +179,7 @@ print(time.time())
 #print(l1)
 plt.show()
 
-"""
+
 
 ############################################################
 ## Solver with analytic functions.. it works but slowly ####
