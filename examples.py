@@ -84,19 +84,13 @@ P3_q2=lambda B: (16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - 16*(B[1] - \
     	16*ft.arb.cos(B[2]))*ft.arb.cos(B[3]) + 10*(-2*B[1] + 16*ft.arb.sin(B[2]))*\
     ft.arb.sin(B[3]))*(-10*(B[1] - 5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) + 10*(B[0] -\
      5*ft.arb.cos(B[3]) - 9)*ft.arb.sin(B[3]))
-B=[ft.arb(2,1),ft.arb(2,1),ft.arb(2,1),ft.arb(2,1)] #not empty
-B=[ft.arb(2,1),ft.arb(2,1),ft.arb(0,1),ft.arb(0,1)]
-B=[ft.arb(2,1),ft.arb(2,1),ft.arb(2.5,0.5),ft.arb(2.5,0.5)]
-B=[ft.arb(2,1),ft.arb(2,1),ft.arb(0,3),ft.arb(0,3)]
-B=[ft.arb(0,1),ft.arb(4,1),ft.arb(2,1),ft.arb(2,1)]
-B=[ft.arb(0,1),ft.arb(4,1),ft.arb(0,1),ft.arb(2,1)]
-B=[ft.arb(0,1),ft.arb(4,1),ft.arb(0,1),ft.arb(0,1)]
-B=[ft.arb(0,1),ft.arb(4,1),ft.arb(4,1),ft.arb(4,1)]
-B=[ft.arb(0,1),ft.arb(4,1),ft.arb(4,1),ft.arb(0,1)]
-B=[ft.arb(2,1),ft.arb(2,1),ft.arb(0,3),ft.arb(0,3)] #not empty
-B=[ft.arb(4,1),ft.arb(1.5,1),ft.arb(0,3),ft.arb(0,3)] # 6 minutes robot 4 boxes
-B=[ft.arb(4.75,1),ft.arb(0.5,1),ft.arb(0,3),ft.arb(0,3)] #65 minutes boxes2
 
+
+
+B=[ft.arb(2.5,2.5),ft.arb(2.5,2.5),ft.arb(0,3),ft.arb(0,3)] #boxes width 0.01
+B=[ft.arb(7.5,2.5),ft.arb(-2.5,2.5),ft.arb(0,3),ft.arb(0,3)]
+B=[ft.arb(2.5,2.5),ft.arb(-7.5,2.5),ft.arb(0,3),ft.arb(0,3)] # boxes3 30 minutes
+B=[ft.arb(7.5,2.5),ft.arb(-7.5,2.5),ft.arb(0,3),ft.arb(0,3)]
 
 jac=[[P1_x1,P1_x2,P1_q1,P1_q2],[P2_x1,P2_x2,P2_q1,P2_q2],[P3_x1,P3_x2,P3_q1,P3_q2]]
 
@@ -109,48 +103,49 @@ T=[[Pij(U0) for Pij in Pi ] for Pi in jac]
 M=[[Pij(m) for Pij in Pi] for Pi in jac]
 print(d.checking_full_rank(T))
 input()
+"""
 
+
+"""
 l1=time.time()
-T=fv.curve_tracer(P,B,jac,wth=0.01,wth2=0.01)
+T=fv.curve_tracer(P,B,jac)
+
+
 T1=[ [[ float(Tij.lower()),float(Tij.upper()) ] for Tij in Ti  ] for Ti in T[0]]
 T2=[ [[ float(Tij.lower()),float(Tij.upper()) ] for Tij in Ti  ] for Ti in T[1]]
-"""
 
-"""
-pickle_out=open("boxes3","wb")
+pickle_out=open("boxes11","wb")
 pickle.dump([T1,T2],pickle_out)
 pickle_out.close()
-print(len(T[1]))
+
+
+projection=[Ti[:2]  for Ti in T[0]]
+
+
+
 """
 
-redump again boxes2 
-
-pickle_in=open("boxes2","rb")
-T=pickle.load(pickle_in)
-
-
-print(T[1][0][2])
-input()
-boxes=[]
-for i in range(len(T[1])):
-	boxes.append([d.ftconstructor(T[1][i][2][0],T[1][i][2][1]),\
-		d.ftconstructor(T[1][i][3][0],T[1][i][3][1])])
 
 
 
 
-	
-
-
-
-
-projection= boxes[:] #[Ti[2:] for Ti in T[0]]
-
+projection=[]
+S=["boxes","boxes1","boxes2","boxes3","boxes4","boxes5","boxes6","boxes7","boxes8","boxes9","boxes10","boxes11"]
+for Si in S:
+ 
+	pickle_in=open(Si,"rb")
+	T=pickle.load(pickle_in)
+	pickle_in.close()
+	boxes=[]
+	for i in range(len(T[0])):
+		boxes.append([d.ftconstructor(T[0][i][0][0],T[0][i][0][1]),\
+		d.ftconstructor(T[0][i][1][0],T[0][i][1][1])])
+	projection += boxes		
 
 fig, ax = plt.subplots()
 plt.grid(True)
-ax.set_xlim(3.75, 5.75)
-ax.set_ylim(-0.5,1.5)
+ax.set_xlim(-20, 20)
+ax.set_ylim(-20,20)
 ax.set_xlabel('x')
 ax.set_ylabel('y')
 c=0
@@ -162,7 +157,7 @@ for box in projection:
     plt.gca().add_patch(rectangle)
 
 print(time.time())
-
+#print(l1)
 plt.show()
 
 

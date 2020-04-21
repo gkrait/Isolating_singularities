@@ -303,16 +303,17 @@ def func_solver(P,P_alt,jac,B,k=3): #k is the number of parts in which every int
     return Solutions  
 
 
-def curve_tracer(P,B,jac,wth=0.01,wth2=0.01):  #returns all list of boxes that contains smooth parts of a curve and it stops if the curve is smooth
+def curve_tracer(P,B,jac,wth=0.0001,wth2=0.01):  #returns all list of boxes that contains smooth parts of a curve and it stops if the curve is smooth
     list_of_boxes=[B]
     smoothness=1
     regular_boxes=[]
     smoothness=1
-    while len(list_of_boxes)!=0 and d.width(list_of_boxes[0])> wth:
-              
+    tim=time.time()
+
+    while  len(list_of_boxes)!=0 and d.width(list_of_boxes[0])> wth  :
               membership=1
               eval_P=[Pi(list_of_boxes[0]) for Pi in P]           #checking whether the box contains a point of the curve
-              print(d.width(list_of_boxes[0]))
+              
               for eval_Pi_at_B in eval_P:
                   if 0 not in ft.arb(1)*(eval_Pi_at_B):
                       membership=0
