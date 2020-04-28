@@ -29,14 +29,15 @@ r4= sp.Symbol('r4')
 t= sp.Symbol('t')
 X=[[x1,x2,x4],[r4],t]
 
+
+###################################################################
+#First branch####################################################
+#############################################################
 P1=lambda B: d.power_interval(B[0]-8*ft.arb.cos(B[2]),2)+ d.power_interval(B[1]-8*ft.arb.sin(B[2]),2)-25
 P2=lambda B:  d.power_interval(B[0]-9-5*ft.arb.cos(B[2]),2)+ d.power_interval(B[1]-5*ft.arb.sin(B[3]),2)-64
-P3=lambda B: (B[0]-8*ft.arb.cos(B[2]))*ft.arb.sin(B[2])-(16*(B[1]-8*ft.arb.sin(B[2])))*ft.arb.cos(B[2])*  \
-(B[0]-9-5*ft.arb.cos(B[3]))*ft.arb.sin(B[3])-(10*(B[1]-5*ft.arb.sin(B[3])))*ft.arb.cos(B[3])
-
+P3=lambda B:  (16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - 16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*(-10*(B[1] - 5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) + 10*(B[0] - 5*ft.arb.cos(B[3]) - 9)*ft.arb.sin(B[3]))
 
 P=[P1,P2,P3]
-
 
 P1_x1=lambda B: 2*B[0]-16*ft.arb.cos(B[2])
 P1_x2=lambda B: 2*B[1]-16*ft.arb.sin(B[2])
@@ -48,46 +49,13 @@ P2_x2=lambda B: 2*B[1]-10*ft.arb.sin(B[3])
 P2_q1=lambda B: ft.arb(0)
 P2_q2=lambda B: 10*(B[0]-9-5*ft.arb.cos(B[3]))*ft.arb.sin(B[3])-(10*(B[1]-5*ft.arb.sin(B[3])))*ft.arb.cos(B[3])
 
-P3_x1=lambda B: 10*(16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) -\
- 16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*((2*B[0] - 16*ft.arb.cos(B[2]))*\
- (2*B[1] - 10*ft.arb.sin(B[3]))-(2*B[1] - 16*ft.arb.sin(B[2]))*(2*B[0] - 10*ft.arb.cos(B[3]) - \
- 18))*ft.arb.sin(B[3])+(16*(B[0]-8*ft.arb.cos(B[2]))*ft.arb.sin(B[2])-16*(B[1] -\
- 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*(-10*(B[1]-5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) +\
- 10*(B[0]-5*ft.arb.cos(B[3])-9)*ft.arb.sin(B[3]))*(32*ft.arb.sin(B[2])-\
- 20*ft.arb.sin(B[3]))+16*((2*B[0]-16*ft.arb.cos(B[2]))*(2*B[1]-10*ft.arb.sin(B[3])) -\
- (2*B[1]-16*ft.arb.sin(B[2]))*(2*B[0]-10*ft.arb.cos(B[3])-18))*(-10*(B[1] - \
- 	5*ft.arb.sin(B[3]))*ft.arb.cos(B[3])+10*(B[0]-5*ft.arb.cos(B[3])-9)*\
- ft.arb.sin(B[3]))*ft.arb.sin(B[2])
+P3_x1=lambda B: 10*(16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - 16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*ft.arb.sin(B[3]) + 16*(-10*(B[1] - 5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) + 10*(B[0] - 5*ft.arb.cos(B[3]) - 9)*ft.arb.sin(B[3]))*ft.arb.sin(B[2])
+P3_x2=lambda B: -10*(16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - 16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*ft.arb.cos(B[3]) - 16*(-10*(B[1] - 5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) + 10*(B[0] - 5*ft.arb.cos(B[3]) - 9)*ft.arb.sin(B[3]))*ft.arb.cos(B[2])
+P3_q1=lambda B:  (-10*(B[1] - 5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) + 10*(B[0] - 5*ft.arb.cos(B[3]) - 9)*ft.arb.sin(B[3]))*((16*B[0] - 128*ft.arb.cos(B[2]))*ft.arb.cos(B[2]) - (-16*B[1] + 128*ft.arb.sin(B[2]))*ft.arb.sin(B[2]) + 128* d.power_interval(ft.arb.sin(B[2]),2) + 128*d.power_interval(ft.arb.cos(B[2]),2))
 
 
-P3_x2=lambda B: -10*(16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) -\
-16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*((2*B[0] - 16*ft.arb.cos(B[2]))\
-*(2*B[1] - 10*ft.arb.sin(B[3])) - (2*B[1] - 16*ft.arb.sin(B[2]))*(2*B[0] - \
-	10*ft.arb.cos(B[3]) - 18))*ft.arb.cos(B[3]) + (16*(B[0] - 8*ft.arb.cos(B[2]))*\
-ft.arb.sin(B[2]) - 16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*(-10*(B[1] - \
-	5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) + 10*(B[0] - 5*ft.arb.cos(B[3]) - 9)*\
-ft.arb.sin(B[3]))*(-32*ft.arb.cos(B[2]) + 20*ft.arb.cos(B[3]) + 36) - 16*((2*B[0] -\
- 16*ft.arb.cos(B[2]))*(2*B[1] - 10*ft.arb.sin(B[3])) - (2*B[1] - 16*ft.arb.sin(B[2]))*\
-(2*B[0] - 10*ft.arb.cos(B[3]) - 18))*(-10*(B[1] - 5*ft.arb.sin(B[3]))*\
-ft.arb.cos(B[3]) + 10*(B[0] - 5*ft.arb.cos(B[3]) - 9)*ft.arb.sin(B[3]))*ft.arb.cos(B[2])
-
-P3_q1=lambda B:  (16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - 16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*(-10*(B[1] - 5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) + 10*(B[0] - 5*ft.arb.cos(B[3]) - 9)*ft.arb.sin(B[3]))*(16*(2*B[1] - 10*ft.arb.sin(B[3]))*ft.arb.sin(B[2]) + 16*(2*B[0] - 10*ft.arb.cos(B[3]) - 18)*ft.arb.cos(B[2])) + ((2*B[0] - 16*ft.arb.cos(B[2]))*(2*B[1] - 10*ft.arb.sin(B[3])) - (2*B[1] - 16*ft.arb.sin(B[2]))*(2*B[0] - 10*ft.arb.cos(B[3]) - 18))*(-10*(B[1] - 5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) + 10*(B[0] - 5*ft.arb.cos(B[3]) - 9)*ft.arb.sin(B[3]))*((16*B[0] - 128*ft.arb.cos(B[2]))*ft.arb.cos(B[2]) - (-16*B[1] + 128*ft.arb.sin(B[2]))*ft.arb.sin(B[2]) + 128*d.power_interval(ft.arb.sin(B[2]),2) + 128*d.power_interval(ft.arb.cos(B[2]),2))
-
-
-P3_q2=lambda B: (16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - 16*(B[1] - \
- 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*((2*B[0] - 16*ft.arb.cos(B[2]))*(2*B[1] -\
-  10*ft.arb.sin(B[3])) - (2*B[1] - 16*ft.arb.sin(B[2]))*(2*B[0] - 10*ft.arb.cos(B[3])\
-   - 18))*(-(-10*B[1] + 50*ft.arb.sin(B[3]))*ft.arb.sin(B[3]) + (10*B[0] - \
-   50*ft.arb.cos(B[3]) - 90)*ft.arb.cos(B[3]) + 50*d.power_interval(ft.arb.sin(B[3]),2) +\
-    50*ft.arb.cos(B[3])**2) + (16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - \
-    16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*(-10*(2*B[0] - \
-    	16*ft.arb.cos(B[2]))*ft.arb.cos(B[3]) + 10*(-2*B[1] + 16*ft.arb.sin(B[2]))*\
-    ft.arb.sin(B[3]))*(-10*(B[1] - 5*ft.arb.sin(B[3]))*ft.arb.cos(B[3]) + 10*(B[0] -\
-     5*ft.arb.cos(B[3]) - 9)*ft.arb.sin(B[3]))
-
-
-
-B=[ft.arb(-7.5,2.5),ft.arb(-7.5,2.5),ft.arb(0,3),ft.arb(0,3)]
+P3_q2=lambda B: (16*(B[0] - 8*ft.arb.cos(B[2]))*ft.arb.sin(B[2]) - 16*(B[1] - 8*ft.arb.sin(B[2]))*ft.arb.cos(B[2]))*(-(-10*B[1] + 50*ft.arb.sin(B[3]))*ft.arb.sin(B[3]) + (10*B[0] - 50*ft.arb.cos(B[3]) - 90)*ft.arb.cos(B[3]) + 50*ft.arb.sin(B[3])**2 + 50*d.power_interval(ft.arb.cos(B[3]),2))
+B=[ft.arb(-2.5,2.5),ft.arb(-2.5,2.5),ft.arb(0,3.14),ft.arb(0,3.14)]
 
 jac=[[P1_x1,P1_x2,P1_q1,P1_q2],[P2_x1,P2_x2,P2_q1,P2_q2],[P3_x1,P3_x2,P3_q1,P3_q2]]
 
@@ -103,7 +71,7 @@ input()
 """
 
 
-"""
+
 l1=time.time()
 T=fv.curve_tracer(P,B,jac)
 
@@ -111,9 +79,11 @@ T=fv.curve_tracer(P,B,jac)
 T1=[ [[ float(Tij.lower()),float(Tij.upper()) ] for Tij in Ti  ] for Ti in T[0]]
 T2=[ [[ float(Tij.lower()),float(Tij.upper()) ] for Tij in Ti  ] for Ti in T[1]]
 
-pickle_out=open("boxes28","wb")
+pickle_out=open("second_branch11","wb")
 pickle.dump([T1,T2],pickle_out)
 pickle_out.close()
+
+
 
 print(len(T[1]))
 projection=[Ti[:2]  for Ti in T[0]]
@@ -136,48 +106,54 @@ print(time.time())
 print(l1)
 plt.show()
 
+
+
+
+
 """
-
-
-
-
-
-
-projection=[]
+###
 S=["boxes","boxes1","boxes2","boxes3","boxes4","boxes5","boxes6","boxes7",\
 "boxes8","boxes9","boxes10","boxes11","boxes12","boxes13","boxes14","boxes15",\
 "boxes16","boxes17","boxes18","boxes19","boxes20","boxes21","boxes22","boxes23",\
 "boxes24","boxes25","boxes26","boxes27","boxes28"]
-for Si in S:
- 
+for Si in S: 
 	pickle_in=open(Si,"rb")
 	T=pickle.load(pickle_in)
 	pickle_in.close()
+
 	if len(T[1])==0 and len(T[0]) !=0:
 	 boxes=[]
 	 for i in range(len(T[0])):
 	 	boxes.append([d.ftconstructor(T[0][i][0][0],T[0][i][0][1]),\
 			d.ftconstructor(T[0][i][1][0],T[0][i][1][1])])
-	 projection += boxes		
-			
-
-fig, ax = plt.subplots()
-plt.grid(True)
-ax.set_xlim(-20, 20)
-ax.set_ylim(-20,20)
-ax.set_xlabel('x')
-ax.set_ylabel('y')
-c=0
+	 projection += boxes	
 
 
-for box in projection:
-    rectangle= plt.Rectangle((float(box[0].lower()),float(box[1].lower()) ), \
-    	float(box[0].upper())-float(box[0].lower()),float(box[1].upper())-float(box[1].lower()), fc='g')
-    plt.gca().add_patch(rectangle)
+########
+answer=[]
 
-print(time.time())
-#print(l1)
-plt.show()
+sol=[ft.arb(12,0.2),ft.arb(3.25,0.2)]
+pickle_in=open("boxes14","rb")
+T=pickle.load(pickle_in)
+pickle_in.close()
+for i in range(len(T[0])):	
+	H=[d.ftconstructor(T[0][i][0][0],T[0][i][0][1]),\
+			d.ftconstructor(T[0][i][1][0],T[0][i][1][1]),d.ftconstructor(T[0][i][2][0],T[0][i][2][1]),\
+			d.ftconstructor(T[0][i][3][0],T[0][i][3][1])]
+	if H[0] in sol[0] and H[1] in sol[1]:
+	    answer.append(H)
+
+
+
+
+projection=[Ti[:2] for Ti in answer ]
+
+
+
+
+"""
+
+
 
 
 
