@@ -1,0 +1,13 @@
+Variables 
+x1 in [-20,20]; 
+x2 in [-20,20]; 
+ q1 in [-3.15,3.15];
+	q2 in [-3.15,3.15];
+	Constraints
+	//you can use C++ comments
+	(x1 - 8*cos(q1))^2 + (x2 - 8*sin(q1) )^2 - 25=0;
+	(x1 - 9 - 5* cos(q2) )^2 + (x2 - 5* sin(q2))^2 - 64 = 0;
+	
+	(16*(x1 - 8*cos(q1))*sin(q1) - 16*(x2 - 8*sin(q1))*cos(q1))*(-10*(x2 - 5*sin(q2))*cos(q2) + 10*(x1 - 5*cos(q2) - 9)*sin(q2))=0;
+
+	end 
