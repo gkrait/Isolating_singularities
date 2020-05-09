@@ -1,0 +1,20 @@
+
+***************************** setup *****************************
+  file loaded:		eq.txt
+  output file:		eq.cov
+*****************************************************************
+
+running............
+
+[31m infeasible problem
+[0m
+ number of solution boxes:	--
+ number of boundary boxes:	--
+ number of unknown boxes:	--
+ number of pending boxes:	--
+ cpu time used:			2.5e-05s
+ number of cells:		1
+
+
+ results written in eq.cov
+ (old file saved in eq.cov~)
