@@ -10,29 +10,41 @@ import math
 from sympy.parsing.sympy_parser import parse_expr 
  
 def SDP_str(P):
-    P_pluse=P.replace("q1","(q1+r3*sqrt(t))")
-    P_pluse=P_pluse.replace("q2","(q2+r4*sqrt(t))")
-    P_minus=P.replace("q1","(q1-r3*sqrt(t))")
-    P_minus=P_minus.replace("q2","(q2-r4*sqrt(t))")
+    n=len(P)+1
+    P_pluse=P[:]
+    P_minus=P[:]
+    for i in range(2,n):
+        P_pluse=P_pluse.replace("x"+str(i+1),"(x"+str(i+1) + "+ r"+str(i+1) +"*sqrt(t))")
+        P_minus=P_minus.replace("x"+str(i+1),"(x"+str(i+1) + "- r"+str(i+1) +"*sqrt(t))")
     SP= "0.5*(" + P_pluse + "+" +P_minus+")=0; \n"
     DP= "0.5*(" + P_pluse + "- (" +P_minus+") )/(sqrt(t))=0; \n"
     return [SP,DP]
-def generating_system(P,x1,x2,t):
-    V=""" Variables \n
-    x1 in """ + str(x1) + """; 
-    x2 in """ + str(x2) +"""; 
-    q1 in [-3.14,3.14];
-    q2 in [-3.14,3.14];
-    r3 in [-1.1, 1.1] ;
-    r4 in [-1.1,1.1] ;
-    t in """ +str(t)+ """ ; 
-    Constraints \n """
-    f= open("eq.txt","w+")
-    f.write(V)
+def generating_system(P,B_Ball):
+
+    n=len(P)+1
+    V=""" Variables \n """
+    for i in range(n):
+        V += "x" +str(i+1) + " in " + str(B_Ball[i]) +" ; \n"
+    for i in range(n,2*n-2):
+        V += "r" +str(i-n+3) + " in " + str(B_Ball[i]) +" ; \n" 
+    V += "t" + " in " + str(B_Ball[2*n-2]) +" ; \n"       
+    V +="Constraints \n"   
+    
     for Pi in P:
-        f.write(SDP_str(Pi)[0])
-        f.write(SDP_str(Pi)[1])
-    f.write("r3^2+r4^2-1=0;\n")
+        V += SDP_str(Pi)[0]
+        V += SDP_str(Pi)[1]
+
+    last_eq=""
+    for i in range(3,n+1):
+        last_eq += "r"+str(i)+"^2"
+    last_eq += "-1=0;"    
+
+    V += last_eq +"\n"
+
+    f= open("eq.txt","w+")
+    f.write(V) 
+    
+    
     f.write("end")
     f.close()
 def intersting_boxes(f,b):
@@ -50,12 +62,13 @@ def intersting_boxes(f,b):
           b[1][0] <= box[1][0] <= box[1][1] <=b[1][1]:
              uncer_boxes.append(box)
     return [intersting_boxes,uncer_boxes]  
-def finding_nodes(P,x1,x2,t):
-    generating_system(P,x1,x2,t)
+def finding_nodes(P,B):
+    generating_system(P,B)
     os.system("ibexsolve   --eps-max=0.1 -s  eq.txt  > output.txt")
     g=open('output.txt','r')
     result=g.readlines()
     T=cb.computing_boxes(result)
+
     return T    
 def estimating_t(components,upper_bound=19.8):  #it works only if len(components)
   t1=upper_bound
@@ -89,7 +102,8 @@ def boxes_sort(boxes):
                 sorted_boxes[i], sorted_boxes[j] =sorted_boxes[j], sorted_boxes[i]
     return sorted_boxes            
 def connected_compnants(boxes):
-    ftboxes=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in boxes ]
+    #ftboxes=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in boxes ]
+    ftboxes=boxes[:]
     components=[[ftboxes[0]]]
     for i in range(1,len(ftboxes)):
         boxi_isused=0
@@ -101,38 +115,193 @@ def connected_compnants(boxes):
                     membership=1
                     boxi_isused=1
                     break
+            if membership==1:
+              break 
+        if boxi_isused==0:
+          components.append([ftboxes[i]])
+    unused=list(range(len(components)))
+    components1=components[:]
+    components2=[]
+    while len(components1) != len(components2) :
+        
+        for i in unused:
+            for j in   [j for j in list(range(i+1,len(components))) if j in unused ]:
+                intersection_exists=False
+                is_looping=True
+                for boxi in components[i]:
+                    
+                    for boxj in components[j]:
+                        if d.boxes_intersection(boxi,boxj)!=[]:
+                            is_looping = False
+                            intersection_exists=True
+                            break
+                    if is_looping==False:
+                       break
+                if intersection_exists== True:
+                    components[i] += components[j]
+                    unused.remove(j)
+            components2=components1[:]
+            components1=[components[k] for k in unused ]                    
+
+    return components1                   
+
+
+
+
+    return components      
+def planner_connected_compnants(boxes):
+    ftboxes=boxes[:]
+    #ftboxes=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in boxes ]
+    components=[[ftboxes[0]]]
+    for i in range(1,len(ftboxes)):
+        boxi_isused=0
+        for j in  range(len(components)):
+            membership=0
+            for k in range(len(components[j])):   
+                if d.boxes_intersection(ftboxes[i][:2],components[j][k][:2]) !=[] and \
+                d.boxes_intersection(ftboxes[i],components[j][k]) ==[]:
+                    components[j].append(ftboxes[i])
+                    membership=1
+                    boxi_isused=1
+                    break
                 
             if membership==1:
               break 
         if boxi_isused==0:
           components.append([ftboxes[i]])
+    unused=list(range(len(components)))
+    components1=components[:]
+    components2=[]
+    while len(components1) != len(components2) :
+        
+        for i in unused:
+            for j in   [j for j in list(range(i+1,len(components))) if j in unused ]:
+                intersection_exists=False
+                is_looping=True
+                for boxi in components[i]:
+                    
+                    for boxj in components[j]:
+                        if d.boxes_intersection(boxi,boxj)==[] and \
+                       d.boxes_intersection(boxi[:2],boxj[:2]) != []  :
+                            is_looping = False
+                            intersection_exists=True
+                            break
+                    if is_looping==False:
+                       break
+                if intersection_exists== True:
+                    components[i] += components[j]
+                    unused.remove(j)
+            components2=components1[:]
+            components1=[components[k] for k in unused ]                    
+
+    return components1                   
+
+
+
+
     return components      
-def estimating_r(components):
+def estimating_r(components,upper_bound=1000):
   r31=5
   r32=0
   r41=5
   r42=0
+  r_bounds=[[upper_bound,0]]*(len(components[0][0])-2)
+  r_list=[]
+  y_list=[]
   for box1 in components[0]:
     for box2 in components[1]:
+        y_list.append([0.5*(q1+q2) for q1,q2 in zip(box1[2:],box2[2:])])
         norm_q1q2=d.distance(box1[2:],box2[2:])
         q1q2=[box1[i]-box2[i] for i in range(2,len(box1)) ]
-        r3,r4=[ ri/norm_q1q2 for ri in q1q2 ]
-        if r31 > r3.lower():
-            r31=float(r3.lower())
-        if r32 < r3.upper():
-            r32=float(r3.upper()) 
-        if   r41 > r4.lower(): 
-          r41=float(r4.lower())
-        if r42 < r4.upper():
-           r42= r4.upper()
+        r=[ ri/norm_q1q2 for ri in q1q2 ]
+        r_list.append(r)
+  r=[]
+  y=[]
+  for i in range(len(y_list[0])):
+    yi1=min([float(y[i].lower()) for y in y_list  ])
+    yi2=max([float(y[i].upper()) for y in y_list  ])
+    y.append([yi1,yi2])
+
+    for i in range(len(r_list[0])):
+        ri1=min([float(r[i].lower()) for r in r_list  ])
+        ri2=max([float(r[i].upper()) for r in r_list  ])
+        r.append([ri1,ri2])
+    
+    
+    
+
    
-  return [[r31,r32],[r41,r42]]
-P1="(x1 - 8*cos(q1))^2 + (x2 - 8*sin(q1) )^2 - 25"
-P2="(x1 - 9 - 5* cos(q2) )^2 + (x2 - 5* sin(q2))^2 - 64"
-P3="(2*x1 - 16*cos(q1))*(2*x2 - 10*sin(q2)) - (2*x2 - 16*sin(q1))*(2*x1 - 10*cos(q2) - 18)"
-P=[P1,P2,P3]
+  return y+r
+def detecting_nodes(f,B):
+    boxes=intersting_boxes(f,B)[0]
+    boxes=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in boxes ]
+    nodes_lifting=[]
+    used=[]
+    for i in range(len(boxes)):
+        for j in range(i+1,len(boxes)):
+            if d.boxes_intersection(boxes[i],boxes[j]) ==[] and \
+             d.boxes_intersection(boxes[i][:2],boxes[j][:2]) :
+                if i not in used:
+                    used.append(i)
+                    nodes_lifting.append(boxes[i])
+                if j not in used:
+                    used.append(j)
+                    nodes_lifting.append(boxes[j])
+    components= planner_connected_compnants(nodes_lifting)
+
+    return components           
+
+def solving_fornodes(equations,f,B):
+    plane_components=detecting_nodes(f,B)
+
+    g=open(equations,'r')
+    P=[ Pi.replace("\n","") for Pi in   g.readlines()  ]
+    Ball_solutions=[]
+    for plane_component in plane_components:
+        x1=float(min([ai[0].lower() for ai in plane_component]))
+        x2=float(max([ai[0].upper() for ai in plane_component]))
+        y1=float(min([ai[1].lower() for ai in plane_component]))
+        y2=float(max([ai[1].upper() for ai in plane_component]))
+        components=connected_compnants(plane_component)
+        r=[ [float(ri[0]),float(ri[1])] for ri in    estimating_r(components)   ]
+        t=estimating_t(components)
+        t=[float(t[0]),float(t[1])]
+        B_Ball=[[x1,x2],[y1,y2]]+r +[t]
+        
+        generating_system(P,B_Ball)
+        solutionsi=finding_nodes(P,B_Ball)
+        print(B_Ball[:2])
+        print(solutionsi)
+        input()
+        Ball_solutions +=solutionsi
+        #pprint(B_Ball[:])
+        #print(solutionsi)
+
+        
 
 
+    return Ball_solutions    
+
+
+
+
+        
+
+
+"""
+equations="equations.txt"
+f="boxes_second_branch"
+B=[[-20,20],[-20,20],[-3.14,3.14],[-3.14,3.14]]
+T=solving_fornodes(equations,f,B)
+print(len(T),T)
+"""
+#T=[d.ft_normal(Ti) for Ti in T ]
+
+
+
+
+
+#cb.ploting_boxes(T,[],a=10)
 
 
 """
@@ -166,45 +335,10 @@ input()"""
 
 
 
-f="boxes_first_branch_silhouette"
-b=[[4.5,5.1],[11,13.15],[-3.15,3.15],[-3.15,3.15],[-1,1],[-1,1],[0.1,9.2] ]
-
-"""
-with open('output.txt') as f:
-            cer_content = f.readlines()  
-T=cb.computing_boxes(cer_content)            
-
-pickle_out=open("additional1","wb")
-pickle.dump(T,pickle_out)
-pickle_out.close()
-
-"""
 
 
 
 
-pickle_in=open("gabe_firstbranch","rb")
-T=pickle.load(pickle_in)
-pickle_in.close()
-
-pickle_in=open("additional","rb")
-T1=pickle.load(pickle_in)
-pickle_in.close()
-
-pickle_in=open("additional1","rb")
-T2=pickle.load(pickle_in)
-pickle_in.close()
-
-
-
-
-
-
-S=T+T1+T2
-
-pickle_out=open("gape1","wb")
-pickle.dump(S,pickle_out)
-pickle_out.close()
 
 
 
@@ -228,14 +362,6 @@ S=finding_nodes(P,b[0],b[1],[t[0],t[1]])
 
 
 
-fig, ax = plt.subplots()
-plt.grid(True)
-ax.set_xlim(1, 1.44)
-ax.set_ylim(1.9, 2)
-#plt.xticks(np.arange(-20, 20, 2.0))
-#plt.yticks(np.arange(-20, 20, 2.0))
-ax.set_xlabel('q1')
-ax.set_ylabel('q2')
 
 """
 for box in components[0]:
@@ -303,28 +429,6 @@ plt.show()
 
 
 """
-
-
-"""
-def connected_components(boxes): #not working
-    index=[set()]*len(boxes)
-    for i in range(len(boxes)-1):
-       for j in range(i+1,len(boxes)):
-        if d.boxes_intersection(boxes[i],boxes[j]):
-            index[i].add(j)
-            index[j].add(i)
-    
-
-    components=[index[0]]
-    for i in index[0]:
-        index[0] +=index[i]
-    
-
-
-    for i in range(1,len(boxes)):
-        for component in components:
-            if component.intersection(index[i]) !=[]:
-                component += index[i]"""
 
 
 
