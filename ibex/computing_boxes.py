@@ -4,7 +4,8 @@ import os
 import pickle 
 import draft as d
 from pprint import pprint
-
+from sympy.parsing.sympy_parser import parse_expr
+import sympy as sp 
 
 
 
@@ -24,8 +25,8 @@ def system_generator(f,B):
 		f.write("x" +str(i+1) + " in " + str(B[i]) +" ; \n")
 	f.write("Constraints \n")
 	for Li in L:
-		f.write(Li+"=0;")
-	f.write("end")
+		f.write(Li.replace("\n","") +"=0; \n")
+	f.write("end ")
 	f.close()
 	return f 
 def solving_with_ibex():
@@ -81,17 +82,17 @@ def computing_boxes(content):
  		k=1
  	  
  return Answer
-def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,nodes=[]):
+def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,nodes=[],color="g"):
    fig, ax = plt.subplots()
    plt.grid(True)
    ax.set_xlim(B[0][0], B[0][1])
    ax.set_ylim(B[1][0], B[1][1])
-   ax.set_xlabel('x')
-   ax.set_ylabel('y')
+   ax.set_xlabel(r'$x_1$')
+   ax.set_ylabel(r'$x_2$')
    c=0
    for box in boxes:
      rectangle= plt.Rectangle((box[var[0]][0],box[var[1]][0]) , \
-    	a*(box[var[0]][1]-box[var[0]][0]),a*(box[var[1]][1]-box[var[1]][0]), fc='g')
+    	a*(box[var[0]][1]-box[var[0]][0]),a*(box[var[1]][1]-box[var[1]][0]), fc=color)
      plt.gca().add_patch(rectangle)
    for box in uncer_boxes:
     	rectangle= plt.Rectangle((box[var[0]][0],box[var[1]][0]) , \
@@ -101,7 +102,7 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,nodes=
    for box in nodes:
      rectangle= plt.Rectangle((box[0][0]-0.25,box[1][0]-0.25) , \
     	(box[0][1]-box[0][0]+0.5),(box[1][1]-box[1][0]+0.5), fc='y',fill=None)
-     plt.gca().add_patch(rectangle)  
+     plt.gca().add_patch(rectangle)   
 
 
 
@@ -132,7 +133,60 @@ def solver(f,B):
 		
 
 	return [certified_boxes,uncertified_boxes]		
-			
+
+def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is even
+	functions=["sin","cos","tan","exp"]+special_function
+	#computing P as sympy exprision
+	n=len(boxes[0])
+	m=len(boxes)
+	g=open(f,'r')
+	P_str=g.readlines()
+	P_str= [Pi.replace('\n','') for Pi in P_str]
+	P_str= [Pi.replace('^','**') for Pi in P_str]
+	P_exp= [parse_expr(Pi) for Pi in P_str]
+	#computing jac and the minors
+	jac=sp.Matrix(P_str).jacobian(sp.Matrix(X))
+	minor1=jac[:,1:].det()
+	minor2=jac[:,[i for i in range(n) if i != 1]  ].det()
+	W=[str(xi) for xi in  list(minor1.free_symbols)]
+
+	#m2=sp.lambdify(X,minor2)
+	fil=open("evaluation_file.py","w")
+	fil.write("import flint as ft \n")
+	fil.write("import sympy as sp \n")
+	fil.write("import draft as d \n")
+	fil.write("from computing_boxes import ploting_boxes \n")
+	fil.write("boxes="+str(boxes)+"\n")
+	fil.write("ftboxes=[ [d.ftconstructor(Bi[0],Bi[1]) for Bi in B ] for B in boxes ] \n"    )
+	fil.write("n=len(boxes[0])\n")
+	fil.write("m=len(boxes)\n")
+	fil.write("m1=[]\n")
+	fil.write("m2=[]\n")
+	#fil.write("X=[] \n")
+	#fil.write("for i in range(n): \n")
+	#fil.write("  X.append(sp.Symbol(\"x\"  +str(i+1)))\n")
+	minor1_str=str(minor1)
+	minor2_str=str(minor2)
+	for i in range(n):
+		minor1_str= minor1_str.replace("x"+str(i+1),"B["+str(i)+"]" )
+		minor2_str= minor2_str.replace("x"+str(i+1),"B["+str(i)+"]" )
+	for func in functions:
+		minor1_str=minor1_str.replace(func,"ft.arb."+func)
+		minor2_str=minor2_str.replace(func,"ft.arb."+func)
+	fil.write("for B in ftboxes: \n")
+	fil.write("   m1.append("+ minor1_str + ") \n")
+	fil.write("   m2.append("+ minor2_str + ") \n")	
+	fil.write("innrer_loops=[i for i in range(m) if 0 in m1[i] and 0 in m2[i] ]\n")
+	fil.write("Bs=[boxes[i] for i in  innrer_loops ]\n")
+	fil.write("ploting_boxes(Bs,[]) ")
+	#fil.write("d.ftprint(m2)\n")
+
+
+	
+	fil.close()
+
+
+
 
 
 
@@ -142,7 +196,21 @@ def solver(f,B):
 
 
 f="equations.txt" 
-B=[[-5,15],[-15,15],[-3.14,3.14],[-3.14,3.14]]
+B=[[-1,1],[-1,1],[-1,1],[-1,1]]
+#B=[d.ftconstructor(Bi[0],Bi[1]) for Bi in B ]
+
+
+pickle_in=open("boxes_first_branch_silhouette","rb")
+boxes=pickle.load(pickle_in)[0]
+pickle_in.close()
+X=[]
+for i in range(len(boxes[0])):
+	X.append(sp.Symbol("x"+str(i+1)))
+
+eval_file_gen(f,boxes,X)
+
+P=X[0]+X[2]+X[1]+X[3]
+f=sp.lambdify(X,P)
 
 """T=solver(f,B)
 pickle_out=open("boxes_first_branch_silhouette","wb")

@@ -8,7 +8,8 @@ import draft as d
 import flint as ft
 import math
 from sympy.parsing.sympy_parser import parse_expr 
- 
+
+
 def SDP_str(P):
     n=len(P)+1
     P_pluse=P[:]
@@ -20,7 +21,6 @@ def SDP_str(P):
     DP= "0.5*(" + P_pluse + "- (" +P_minus+") )/(sqrt(t))=0; \n"
     return [SP,DP]
 def generating_system(P,B_Ball):
-
     n=len(P)+1
     V=""" Variables \n """
     for i in range(n):
@@ -35,9 +35,9 @@ def generating_system(P,B_Ball):
         V += SDP_str(Pi)[1]
 
     last_eq=""
-    for i in range(3,n+1):
-        last_eq += "r"+str(i)+"^2"
-    last_eq += "-1=0;"    
+    for i in range(3,n):
+        last_eq += "r"+str(i)+"^2+"
+    last_eq += "r" +str(n)+"^2 -1=0;"    
 
     V += last_eq +"\n"
 
@@ -52,6 +52,7 @@ def intersting_boxes(f,b):
     curve=pickle.load(pickle_in)
     pickle_in.close()
     intersting_boxes=[]
+
     uncer_boxes=[]
     for box in curve[0]:
         if  b[0][0] <= box[0][0] <= box[0][1] <=b[0][1] and \
@@ -67,10 +68,11 @@ def finding_nodes(P,B):
     os.system("ibexsolve   --eps-max=0.1 -s  eq.txt  > output.txt")
     g=open('output.txt','r')
     result=g.readlines()
+
     T=cb.computing_boxes(result)
 
     return T    
-def estimating_t(components,upper_bound=19.8):  #it works only if len(components)
+def estimating_t1(components,upper_bound=200):  #it works only if len(components)
   t1=upper_bound
   t2=0
   for box1 in components[0]:
@@ -85,6 +87,23 @@ def estimating_t(components,upper_bound=19.8):  #it works only if len(components
   t=0.25*d.power_interval(t,2)     
 
   return [float(t.lower()),float(t.upper())]     
+
+def estimating_t(components,upper_bound=19.8):  #it works only if len(components)
+  t1=upper_bound
+  t2=0
+  for box1 in components[0]:
+    for box2 in components[1]:
+        a=d.distance(box1,box2).lower()
+        b=d.distance(box1,box2).upper()
+
+    if t1 > a:
+     t1=a 
+    if t2<b:
+     t2=b 
+  t=d.ftconstructor(t1,t2)
+  t=0.25*d.power_interval(t,2) 
+
+  return [float(t.lower()),float(t.upper())] 
 def boxes_compare(box1,box2):
     flage=0
     for i in range(len(box1)-1,-1,-1):
@@ -104,6 +123,7 @@ def boxes_sort(boxes):
 def connected_compnants(boxes):
     #ftboxes=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in boxes ]
     ftboxes=boxes[:]
+
     components=[[ftboxes[0]]]
     for i in range(1,len(ftboxes)):
         boxi_isused=0
@@ -122,8 +142,8 @@ def connected_compnants(boxes):
     unused=list(range(len(components)))
     components1=components[:]
     components2=[]
-    while len(components1) != len(components2) :
-        
+    
+    while len(components1) != len(components2) :  
         for i in unused:
             for j in   [j for j in list(range(i+1,len(components))) if j in unused ]:
                 intersection_exists=False
@@ -144,12 +164,8 @@ def connected_compnants(boxes):
             components1=[components[k] for k in unused ]                    
 
     return components1                   
-
-
-
-
-    return components      
-def planner_connected_compnants(boxes):
+     
+def planner_connected_compnants(boxes): 
     ftboxes=boxes[:]
     #ftboxes=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in boxes ]
     components=[[ftboxes[0]]]
@@ -201,10 +217,6 @@ def planner_connected_compnants(boxes):
 
     return components      
 def estimating_r(components,upper_bound=1000):
-  r31=5
-  r32=0
-  r41=5
-  r42=0
   r_bounds=[[upper_bound,0]]*(len(components[0][0])-2)
   r_list=[]
   y_list=[]
@@ -217,26 +229,29 @@ def estimating_r(components,upper_bound=1000):
         r_list.append(r)
   r=[]
   y=[]
+
+      
+  
   for i in range(len(y_list[0])):
     yi1=min([float(y[i].lower()) for y in y_list  ])
     yi2=max([float(y[i].upper()) for y in y_list  ])
     y.append([yi1,yi2])
 
-    for i in range(len(r_list[0])):
+    
+  for i in range(len(r_list[0])):
         ri1=min([float(r[i].lower()) for r in r_list  ])
         ri2=max([float(r[i].upper()) for r in r_list  ])
-        r.append([ri1,ri2])
-    
-    
-    
+        r.append([ri1,ri2])    
 
-   
-  return y+r
+  return y+r      
+  
 def detecting_nodes(f,B):
     boxes=intersting_boxes(f,B)[0]
+
     boxes=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in boxes ]
     nodes_lifting=[]
     used=[]
+
     for i in range(len(boxes)):
         for j in range(i+1,len(boxes)):
             if d.boxes_intersection(boxes[i],boxes[j]) ==[] and \
@@ -253,7 +268,6 @@ def detecting_nodes(f,B):
 
 def solving_fornodes(equations,f,B):
     plane_components=detecting_nodes(f,B)
-
     g=open(equations,'r')
     P=[ Pi.replace("\n","") for Pi in   g.readlines()  ]
     Ball_solutions=[]
@@ -263,16 +277,15 @@ def solving_fornodes(equations,f,B):
         y1=float(min([ai[1].lower() for ai in plane_component]))
         y2=float(max([ai[1].upper() for ai in plane_component]))
         components=connected_compnants(plane_component)
+
         r=[ [float(ri[0]),float(ri[1])] for ri in    estimating_r(components)   ]
         t=estimating_t(components)
         t=[float(t[0]),float(t[1])]
         B_Ball=[[x1,x2],[y1,y2]]+r +[t]
-        
+
         generating_system(P,B_Ball)
         solutionsi=finding_nodes(P,B_Ball)
-        print(B_Ball[:2])
-        print(solutionsi)
-        input()
+
         Ball_solutions +=solutionsi
         #pprint(B_Ball[:])
         #print(solutionsi)
@@ -280,7 +293,7 @@ def solving_fornodes(equations,f,B):
         
 
 
-    return Ball_solutions    
+    return Ball_solutions
 
 
 

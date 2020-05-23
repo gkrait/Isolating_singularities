@@ -19,38 +19,38 @@ def DP_str(P):
     D=[]
     x1=sp.Symbol("x1")
     x2=sp.Symbol("x2")
-    q1=sp.Symbol("q1")
-    q2=sp.Symbol("q2")
+    x3=sp.Symbol("x3")
+    #q2=sp.Symbol("q2")
     r3=sp.Symbol("r3")
-    r4=sp.Symbol("r4")
-    X=[x1,x2,q1,q2]
+    #r4=sp.Symbol("r4")
+    X=[x1,x2,q1]
     for Pi in P:
         Pi=Pi.replace("^","**")
         D.append(parse_expr(Pi))
     jacobian_P= sp.Matrix(D).jacobian(sp.Matrix(X)) 
     minor_P=jacobian_P[:,2:]
-    T=minor_P *sp.Matrix([r3,r4])
+    T=minor_P *sp.Matrix([r3])
     answer=[]
     for i in range(len(P)):
         t=str(T[i,0])
         t=t.replace("**","^")
         answer.append(t)
     return answer
-def generating_system(P,b):
-    V=""" Variables \n
-    x1 in """ + str(b[0]) + """; 
-    x2 in """ + str(b[1]) +"""; 
-    q1 in""" +  str(b[2])+ """;
-    q2 in """ + str(b[3]) +""" ;
-    r3 in """ + str(b[4]) +""" ;
-    r4 in """ + str(b[5]) +""" ;
-    t in """  + str(b[6]) +  """ ; 
-    Constraints \n """
+def generating_system(P,B_Ball):
+    n=len(P)+1
+    V=""" Variables \n """
+    for i in range(n):
+        V += "x" +str(i+1) + " in " + str(B_Ball[i]) +" ; \n"
+    for i in range(n,2*n-2):
+        V += "r" +str(i-n+3) + " in " + str(B_Ball[i]) +" ; \n" 
+    V += "t" + " in " + str(B_Ball[2*n-2]) +" ; \n"       
+    V +="Constraints \n" 
     f= open("eq.txt","w+")
     f.write(V)
     for Pi in P:
         f.write(Pi+"=0;\n")
     S=DP_str(P)
+
     for Si in S:
           f.write(Si+"=0; \n")
     f.write("r3^2+r4^2-1=0;\n")
@@ -140,11 +140,11 @@ P=[P1,P2,P3]
 b=[[4.4,4.6],[12.15,12.225],[-3.14,3.14],[-3.14,3.14],[-1.1,1.1],[-1.1,1.1],[-0.1,0.92] ]
 
 
-generating_system(P,b)
+#generating_system(P,b)
 
 
 
-input()
+
 
 
 """

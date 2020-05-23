@@ -3,20 +3,26 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.ticker as ticker
 import matplotlib.patches as mpatches
-import singularities as s
+#import singularities as s
 from pprint import pprint
+import computing_boxes as cb
 pickle_in=open("boxes_first_branch_silhouette","rb")
 branch1=pickle.load(pickle_in)
 pickle_in.close()
-
+B=[[-20,20],[-20,20],[-3.14,3.14],[-3.14,3.14]]
 pickle_in=open("boxes_second_branch","rb")
 branch2=pickle.load(pickle_in)
 pickle_in.close()
 
+cb.ploting_boxes(branch1[0],branch2[0],B=B[2:],var=[2,3],b=10000000)
 
+input()
 equations="equations.txt"
 f="boxes_second_branch"
-B=[[-20,20],[-20,20],[-3.14,3.14],[-3.14,3.14]]
+
+
+
+
 nodes=s.solving_fornodes(equations,f,B)
 
 fig, ax = plt.subplots()
@@ -61,7 +67,6 @@ for box in branch1[1]:
 
  
 for box in nodes:
-
      rectangle= plt.Rectangle((box[0][0]-0.25,box[1][0]-0.25) , \
     	(box[0][1]-box[0][0]+0.5),(box[1][1]-box[1][0]+0.5), fc='y',fill=None)
      plt.gca().add_patch(rectangle)  
