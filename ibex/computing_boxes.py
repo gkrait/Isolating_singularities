@@ -6,8 +6,11 @@ import draft as d
 from pprint import pprint
 from sympy.parsing.sympy_parser import parse_expr
 import sympy as sp 
+import os 
 
-
+def normal_subdivision(B):
+	ft_B=d.subdivide([d.ftconstructor(Bi[0],Bi[1]) for Bi in B[:]])
+	return [d.ft_normal(Bi)  for Bi in ft_B]
 
 def plane_subdivision(B):
 	ft_B2=d.subdivide([d.ftconstructor(Bi[0],Bi[1]) for Bi in B[:2]])
@@ -107,7 +110,7 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,n
 
 
    plt.show()
-def solver(f,B):
+def solver(f,B): #Assumption: no cusps
 	L=[B]
 	certified_boxes=[]
 	uncertified_boxes=[]
@@ -126,15 +129,31 @@ def solver(f,B):
 			children=plane_subdivision(L[0])
 			L.remove(L[0])
 			L += children
-		#print(len(L))
-		#input()		
-		
-	    
-		
+	L=eval_file_gen(f,certified_boxes)
+	
+	
+	print([Li for Li in L])
+	while L.replace('\n',"") != "[]":
+		L=L.replace('[','')
+		L=L.replace(']','')
+		L=L.replace('\n','')
+		L=L.split(",")
+		print(L)
+		input()
+		for i in L:
+			#print(i)
+			#input()
+			children=normal_subdivision(certified_boxes[int(i)])
+			certified_boxes.remove(certified_boxes[int(i)])
+			certified_boxes +=children
+		L =  eval_file_gen(f,certified_boxes)
+		#print(L)
+		#input()
+ 	    
 
 	return [certified_boxes,uncertified_boxes]		
 
-def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is even
+def eval_file_gen(f,boxes,special_function=[]): #condition: len(boxes[0]) is even
 	functions=["sin","cos","tan","exp"]+special_function
 	#computing P as sympy exprision
 	n=len(boxes[0])
@@ -148,14 +167,12 @@ def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is e
 	jac=sp.Matrix(P_str).jacobian(sp.Matrix(X))
 	minor1=jac[:,1:].det()
 	minor2=jac[:,[i for i in range(n) if i != 1]  ].det()
-	W=[str(xi) for xi in  list(minor1.free_symbols)]
-
 	#m2=sp.lambdify(X,minor2)
 	fil=open("evaluation_file.py","w")
 	fil.write("import flint as ft \n")
 	fil.write("import sympy as sp \n")
 	fil.write("import draft as d \n")
-	fil.write("from computing_boxes import ploting_boxes \n")
+	#fil.write("from computing_boxes import ploting_boxes \n")
 	fil.write("boxes="+str(boxes)+"\n")
 	fil.write("ftboxes=[ [d.ftconstructor(Bi[0],Bi[1]) for Bi in B ] for B in boxes ] \n"    )
 	fil.write("n=len(boxes[0])\n")
@@ -177,40 +194,34 @@ def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is e
 	fil.write("   m1.append("+ minor1_str + ") \n")
 	fil.write("   m2.append("+ minor2_str + ") \n")	
 	fil.write("innrer_loops=[i for i in range(m) if 0 in m1[i] and 0 in m2[i] ]\n")
-	fil.write("Bs=[boxes[i] for i in  innrer_loops ]\n")
-	fil.write("ploting_boxes(Bs,[]) ")
-	#fil.write("d.ftprint(m2)\n")
-
-
-	
+	fil.write("print(innrer_loops)\n")
 	fil.close()
+	#cmd=os.system("python3 evaluation_file.py ")
+	t=os.popen("python3 evaluation_file.py ").read()
+	return t
 
 
-
-
-
-
-			
-
-
-
+X=[]
+for i in range(4):
+	X.append(sp.Symbol("x"+str(i+1)))
 
 f="equations.txt" 
-B=[[-1,1],[-1,1],[-1,1],[-1,1]]
+B=[[-5,15],[-15,15],[-3.14,3.14],[-3.14,3.14]]
 #B=[d.ftconstructor(Bi[0],Bi[1]) for Bi in B ]
+T=solver(f,B)
+
+#print(len(T[0]),len(T[1]))
 
 
+
+"""
 pickle_in=open("boxes_first_branch_silhouette","rb")
 boxes=pickle.load(pickle_in)[0]
 pickle_in.close()
-X=[]
-for i in range(len(boxes[0])):
-	X.append(sp.Symbol("x"+str(i+1)))
 
-eval_file_gen(f,boxes,X)
 
-P=X[0]+X[2]+X[1]+X[3]
-f=sp.lambdify(X,P)
+(eval_file_gen(f,boxes))
+"""
 
 """T=solver(f,B)
 pickle_out=open("boxes_first_branch_silhouette","wb")
