@@ -7,9 +7,11 @@ import sympy as sp
 import draft as d
 import flint as ft
 import math
-#import singularities as s
+
+
 from sympy.parsing.sympy_parser import parse_expr
-import computing_boxes as cb
+#from computing_boxes import  computing_boxes
+#import computing_boxes as cb
 def inter_intersect(I1,I2):
     T=[]
     for i in range(len(I1)):
@@ -17,19 +19,14 @@ def inter_intersect(I1,I2):
     return T  
 def DP_str(P):
     D=[]
-    x1=sp.Symbol("x1")
-    x2=sp.Symbol("x2")
-    x3=sp.Symbol("x3")
-    #q2=sp.Symbol("q2")
-    r3=sp.Symbol("r3")
-    #r4=sp.Symbol("r4")
-    X=[x1,x2,q1]
+    X=[ (sp.Symbol("x"+str(i))) for i in range(1,len(P)+2) ]
+    r=[(sp.Symbol("r"+str(i))) for i in range(3,len(P)+2)]
     for Pi in P:
         Pi=Pi.replace("^","**")
         D.append(parse_expr(Pi))
     jacobian_P= sp.Matrix(D).jacobian(sp.Matrix(X)) 
     minor_P=jacobian_P[:,2:]
-    T=minor_P *sp.Matrix([r3])
+    T=minor_P *sp.Matrix([[ri] for ri in r  ])
     answer=[]
     for i in range(len(P)):
         t=str(T[i,0])
@@ -42,8 +39,9 @@ def generating_system(P,B_Ball):
     for i in range(n):
         V += "x" +str(i+1) + " in " + str(B_Ball[i]) +" ; \n"
     for i in range(n,2*n-2):
-        V += "r" +str(i-n+3) + " in " + str(B_Ball[i]) +" ; \n" 
-    V += "t" + " in " + str(B_Ball[2*n-2]) +" ; \n"       
+        V += "r" +str(i-n+3) + " in " + str(B_Ball[i]) +" ; \n"
+
+    #V += "t" + " in " + str(B_Ball[2*n-2]) +" ; \n"       
     V +="Constraints \n" 
     f= open("eq.txt","w+")
     f.write(V)
@@ -53,7 +51,11 @@ def generating_system(P,B_Ball):
 
     for Si in S:
           f.write(Si+"=0; \n")
-    f.write("r3^2+r4^2-1=0;\n")
+    last_eq=""
+    for i in range(3,len(P)+1):
+        last_eq += "r"+str(i)+"^2+"
+    last_eq += "r" +str(n)+"^2 -1=0;" 
+    f.write(last_eq+"\n")
     f.write("end")
     f.close()
 def intersting_boxes(f,b):
@@ -76,7 +78,7 @@ def finding_nodes(P,x1,x2,t):
     os.system("ibexsolve   --eps-max=0.1 -s  eq.txt  > output.txt")
     g=open('output.txt','r')
     result=g.readlines()
-    T=cb.computing_boxes(result)
+    T=computing_boxes(result)
     return T    
 def estimating_t(components,upper_bound=19.8):  #it works only if len(components)
   t1=upper_bound
@@ -131,17 +133,50 @@ def connected_compnants(boxes):
 def decimal_str(x: float, decimals: int = 10) -> str:
     return format(x, f".{decimals}f").lstrip().rstrip('0')                        
 
+def cusp_ibex_output(P,B):
+    generating_system(P,B)
+    os.system("ibexsolve   --eps-max=0.1 -s  eq.txt  > output.txt")
+    g=open('output.txt','r')
+    result=g.readlines()
+    T=computing_boxes(result)
+    return T
 
-P1="(x1 - 8*cos(q1))^2 + (x2 - 8*sin(q1) )^2 - 25"
-P2="(x1 - 9 - 5* cos(q2) )^2 + (x2 - 5* sin(q2))^2 - 64"
-P3="(16*(x1 - 8*cos(q1))*sin(q1) - 16*(x2 - 8*sin(q1))*cos(q1))*(-10*(x2 - 5*sin(q2))*cos(q2) + 10*(x1 - 5*cos(q2) - 9)*sin(q2))"
+def computing_boxes(content):
+ i=0
+ Answer=[]
+ for fi in content:
+    try:
+     a=fi.index('(')
+     b=fi.index(')')
+     T=(fi[a:b+1]).replace('(','[')
+     T=T.replace(')',']')
+     T=T.split(";")
 
-P=[P1,P2,P3]
-b=[[4.4,4.6],[12.15,12.225],[-3.14,3.14],[-3.14,3.14],[-1.1,1.1],[-1.1,1.1],[-0.1,0.92] ]
+     E=[]
+     i=0
+     for Ti in T:
+        Ti= Ti.replace('[',"")
+        Ti= Ti.replace(']',"")
+        Ti=Ti.replace('<','')
+        Ti=Ti.replace('>','')
+        x=Ti.index(",")
+        a=float(Ti[:x])
+        b=float(Ti[x+1:])
+        E.append([])
+        E[i]=[a,b]
+        i+=1
+     Answer.append(E)
+    except ValueError:
+        pass 
+ return Answer    
+P1="x1 -(cos(x3)*(3+sin(x3)^4))"
+P2="x2- (sin(x3)^2*(3+sin(8*x3)))"
+P=[P1,P2]
 
+B=[[-3.1,3.1],[-1,6.1],[-3.14,3.14],[-1.01,1.01]]
 
-#generating_system(P,b)
-
+#generating_system(P,B)
+#print(ibex_output(P,B))
 
 
 
