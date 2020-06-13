@@ -38,8 +38,8 @@ ax.set_ylabel('x2')
 
 
 
-green_patch = mpatches.Patch(color='green', label='Branch 1 (Silhouette)')
-blue_patch = mpatches.Patch(color='blue', label='Branch 2')
+green_patch = mpatches.Patch(color='green', label='serial singularity')
+blue_patch = mpatches.Patch(color='blue', label='parallel singularity')
 black_patch = mpatches.Patch(color='black', label='Certified nodes',fill=None)
 plt.legend(handles=[green_patch,blue_patch,black_patch])
 

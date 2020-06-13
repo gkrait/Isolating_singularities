@@ -7,7 +7,73 @@ from pprint import pprint
 from sympy.parsing.sympy_parser import parse_expr
 import sympy as sp 
 import os 
-from cusp import cusp_ibex_output
+from cusp import cusp_Ball_solver
+import matplotlib.patches as mpatches
+
+
+
+def Ball_node_gen(equations,B_Ball,X):
+    P=open(equations,"r").readlines()
+    P=[Pi.replace('\n','') for Pi in P]
+    n=len(X)
+    V=""" Variables \n """
+    for i in range(n):
+        V += "x" +str(i+1) + " in " + str(B_Ball[i]) +" ; \n"
+    for i in range(n,2*n-2):
+        V += "r" +str(i-n+3) + " in " + str(B_Ball[i]) +" ; \n" 
+    V += "t" + " in " + str(B_Ball[2*n-2]) +" ; \n"       
+    V +="Constraints \n"   
+    for Pi in P:
+        V += cb.SDP_str(Pi,X)[0]
+        V += cb.SDP_str(Pi,X)[1]
+    last_eq=""
+    for i in range(3,n):
+        last_eq += "r"+str(i)+"^2+"
+    last_eq += "r" +str(n)+"^2 -1=0;"    
+    V += last_eq +"\n"
+    f= open("eq.txt","w+")
+    f.write(V) 
+    f.write("end")
+    f.close() 
+def Ball_solver(equations,B_Ball,X):     #the width condition needs to be added
+	L=[B_Ball]
+	certified_boxes=[]
+	uncertified_boxes=[]
+	n=len(X)
+	while len(L) !=0: 
+	
+		solvability=1
+		if B_Ball[2*n-2][0] <= 0 <=   B_Ball[2*n-2][1] and \
+		d.width([ d.ftconstructor(Bi[0],Bi[1]) for Bi in L[0] ] ) <0.1 :
+			Ball_cusp_gen(equations,B_Ball,X)
+		elif (B_Ball[2*n-2][0] > 0 or 0 >   B_Ball[2*n-2][1] ) \
+		and d.width([ d.ftconstructor(Bi[0],Bi[1]) for Bi in L[0] ] ) <0.1:
+			Ball_node_gen(equations,B_Ball,X)
+		else:
+			children=cb.plane_subdivision(L[0])
+			L.remove(L[0])
+			L += children
+			solvability=0
+		if solvability==1:
+			ibex_output=cb.solving_with_ibex()
+			if ibex_output[0]== "Empty":
+		    
+			  L.remove(L[0])
+			elif len(ibex_output[0]) !=0:  
+		    
+			   certified_boxes +=cb.computing_boxes(ibex_output[0])
+			   L.remove(L[0])
+			elif len(ibex_output[1])!=0:   
+		    
+			  uncertified_boxes +=cb.computing_boxes(ibex_output[1])
+			  L.remove(L[0])
+			else:  
+			  children=cb.plane_subdivision(L[0])
+			  L.remove(L[0])
+			  L += children
+		
+	return [certified_boxes,uncertified_boxes]		
+		
 
 
 
@@ -21,10 +87,8 @@ def boxes_intersection(B1,B2):
       inters=[]
       break  
   return inters
-
-
-def SDP_str(P):
-    n=len(P)+1
+def SDP_str(P,X):
+    n=len(X)
     P_pluse=P[:]
     P_minus=P[:]
     for i in range(2,n):
@@ -33,8 +97,8 @@ def SDP_str(P):
     SP= "0.5*(" + P_pluse + "+" +P_minus+")=0; \n"
     DP= "0.5*(" + P_pluse + "- (" +P_minus+") )/(sqrt(t))=0; \n"
     return [SP,DP]
-def generating_system(P,B_Ball):
-    n=len(P)+1
+def generating_system(P,B_Ball,X):
+    n=len(X)
     V=""" Variables \n """
     for i in range(n):
         V += "x" +str(i+1) + " in " + str(B_Ball[i]) +" ; \n"
@@ -42,10 +106,9 @@ def generating_system(P,B_Ball):
         V += "r" +str(i-n+3) + " in " + str(B_Ball[i]) +" ; \n" 
     V += "t" + " in " + str(B_Ball[2*n-2]) +" ; \n"       
     V +="Constraints \n"   
-    
     for Pi in P:
-        V += SDP_str(Pi)[0]
-        V += SDP_str(Pi)[1]
+        V += SDP_str(Pi,X)[0]
+        V += SDP_str(Pi,X)[1]
 
     last_eq=""
     for i in range(3,n):
@@ -56,8 +119,6 @@ def generating_system(P,B_Ball):
 
     f= open("eq.txt","w+")
     f.write(V) 
-    
-    
     f.write("end")
     f.close()
 def intersting_boxes1(f,b):
@@ -87,8 +148,8 @@ def intersting_boxes(curve,b):
           b[1][0] <= box[1][0] <= box[1][1] <=b[1][1]:
              uncer_intersting_boxes.append(box)
     return [cer_intersting_boxes,uncer_intersting_boxes]  
-def ibex_output(P,B):
-    generating_system(P,B)
+def ibex_output(P,B,X):
+    generating_system(P,B,X)
     os.system("ibexsolve   --eps-max=0.1 -s  eq.txt  > output.txt")
     g=open('output.txt','r')
     result=g.readlines()
@@ -269,9 +330,11 @@ def estimating_r(components,upper_bound=1000):
         r.append([ri1,ri2])    
 
   return y+r       
-def detecting_nodes(boxes,B,f): #boxes are list of cer and uncer curve
+def detecting_nodes(boxes,B,f,X): #boxes are list of cer and uncer curve
     mixes_boxes= [[1,box ] for box in boxes[0] ] +[[0,box ] for box in boxes[1]] #putting flaggs for cer and uncer boxes
+
     ftboxes=[ [box[0], [d.ftconstructor(boxi[0],boxi[1])  for boxi in box[1]] ] for box in mixes_boxes ]
+    
     nodes_lifting=[]
     used=[]
     for i in range(len(ftboxes)):
@@ -292,13 +355,13 @@ def detecting_nodes(boxes,B,f): #boxes are list of cer and uncer curve
     for component in components:
         boxes_component=[box[1] for box in component]
         component_normal =[ [[ float(Bi.lower()),  float(Bi.upper()) ] for Bi in box[1] ] for box in component ]
-        if 0  not in [ box[0] for box in  component]  and eval_file_gen(f,component_normal) =="[]\n" :
+        if 0  not in [ box[0] for box in  component]  and eval_file_gen(f,component_normal,X) =="[]\n" :
             cer_components.append(boxes_component)
         else:
             uncer_components.append(boxes_component)
     return [cer_components,uncer_components]         
-def solving_fornodes(equations,boxes,B):
-    plane_components=detecting_nodes(boxes,B,f)[0]
+def solving_fornodes(equations,boxes,B,X):
+    plane_components=detecting_nodes(boxes,B,equations,X)[0]
     g=open(equations,'r')
     P=[ Pi.replace("\n","") for Pi in   g.readlines()  ]
     Ball_solutions=[]
@@ -312,8 +375,8 @@ def solving_fornodes(equations,boxes,B):
         t=estimating_t(components)
         t=[float(t[0]),float(t[1])]
         B_Ball=[[x1,x2],[y1,y2]]+r +[t]
-        generating_system(P,B_Ball)
-        solutionsi=ibex_output(P,B_Ball)
+        generating_system(P,B_Ball,X)
+        solutionsi=ibex_output(P,B_Ball,X)
         Ball_solutions +=solutionsi
     return Ball_solutions
 def normal_subdivision(B):
@@ -341,10 +404,11 @@ def system_generator(f,B,X):
 	f.write("end ")
 	f.close()
 	return f 
-def solving_with_ibex():
+def solving_with_ibex(eps=0.1):
 	uncer_content=[]
 	cer_content=[]
-	os.system("ibexsolve   --eps-max=0.1 -s  eq.txt  > output.txt")
+	os.system("ibexsolve   --eps-max="+ str(eps) +" -s  eq.txt  > output.txt")
+
 	g=open('output.txt','r')
 	result=g.read()
 	with open('output.txt') as f:
@@ -355,10 +419,6 @@ def solving_with_ibex():
 		elif "infeasible problem" in result:
 			uncer_content="Empty"
 			cer_content="Empty"
-
-
-
-
 	return [cer_content,uncer_content]			
 def computing_boxes(content):
  i=0
@@ -393,9 +453,14 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,n
    plt.grid(True)
    ax.set_xlim(B[0][0], B[0][1])
    ax.set_ylim(B[1][0], B[1][1])
-   ax.set_xlabel(r'$x_1$')
-   ax.set_ylabel(r'$x_2$')
+   ax.set_xlabel(r'$q_1$')
+   ax.set_ylabel(r'$q_2$')
+   ax.set_title('The projection to the command f')
    c=0
+   green_patch = mpatches.Patch(color='green', label='serial singularity')
+   red_patch = mpatches.Patch(color='red', label='parallel singularity')
+   #black_patch = mpatches.Patch(color='black', label='Certified nodes',fill=None)
+   plt.legend(handles=[green_patch,red_patch])
    for box in boxes:
      rectangle= plt.Rectangle((box[var[0]][0],box[var[1]][0]) , \
     	a*(box[var[0]][1]-box[var[0]][0]),a*(box[var[1]][1]-box[var[1]][0]), fc=color)
@@ -420,13 +485,13 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,n
 
 
    plt.show()
-def solver(f,B,X): 
+def enclosing_boxes(system,B,X,eps=0.1): 
 	L=[B]
 	certified_boxes=[]
 	uncertified_boxes=[]
 	while len(L) !=0:
-		system=system_generator(f,L[0],X)
-		ibex_output=solving_with_ibex()
+		system=system_generator(system,L[0],X)
+		ibex_output=solving_with_ibex(eps)
 
 		if ibex_output[0]== "Empty":
 			L.remove(L[0])
@@ -442,8 +507,7 @@ def solver(f,B,X):
 			L += children
 	return [certified_boxes,uncertified_boxes]		
 def loopsfree_checker(f,certified_boxes,uncer_boxes,P): #Assumption: no cusps
-	#certified_boxes ,uncer_boxes =solver(f,B_normal,X)
-	L=eval_file_gen(f,certified_boxes)
+	L=eval_file_gen(f,certified_boxes,X)
 	while L.replace('\n',"") != "[]":
 		L=L.replace('[','')
 		L=L.replace(']','')
@@ -454,13 +518,13 @@ def loopsfree_checker(f,certified_boxes,uncer_boxes,P): #Assumption: no cusps
 			children=normal_subdivision(certified_boxes[int(i)])
 			certified_boxes.remove(certified_boxes[int(i)])
 			for child in children:
-				cer_children, uncer_children= solver(f,child,X)
+				cer_children, uncer_children= enclosing_boxes(f,child,X)
 				certified_boxes +=cer_children
 				uncer_boxes +=uncer_children
-		L =  eval_file_gen(f,certified_boxes)
+		L =  eval_file_gen(f,certified_boxes,X)
 	return L	
     
-def eval_file_gen(f,boxes,special_function=[]): #condition: len(boxes[0]) is even
+def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is even
 	functions=["sin","cos","tan","exp"]+special_function
 	n=len(boxes[0])
 	m=len(boxes)
@@ -471,20 +535,19 @@ def eval_file_gen(f,boxes,special_function=[]): #condition: len(boxes[0]) is eve
 	P_exp= [parse_expr(Pi) for Pi in P_str]
 	#computing jac and the minors
 	jac=sp.Matrix(P_str).jacobian(sp.Matrix(X))
-	
 	minor1=jac[:,1:].det()
 	minor2=jac[:,[i for i in range(n) if i != 1]  ].det()
 	fil=open("evaluation_file.py","w")
 	fil.write("import flint as ft \n")
 	fil.write("import sympy as sp \n")
 	fil.write("import draft as d \n")
+	fil.write("def eval_func():\n  pass \n")
 	fil.write("boxes="+str(boxes)+"\n")
 	fil.write("ftboxes=[ [d.ftconstructor(Bi[0],Bi[1]) for Bi in B ] for B in boxes ] \n"    )
 	fil.write("n=len(boxes[0])\n")
 	fil.write("m=len(boxes)\n")
 	fil.write("m1=[]\n")
 	fil.write("m2=[]\n")
-
 	minor1_str=str(minor1)
 	minor2_str=str(minor2)
 	for i in range(n):
@@ -493,54 +556,45 @@ def eval_file_gen(f,boxes,special_function=[]): #condition: len(boxes[0]) is eve
 	for func in functions:
 		minor1_str=minor1_str.replace(func,"ft.arb."+func)
 		minor2_str=minor2_str.replace(func,"ft.arb."+func)
-	
 	fil.write("for B in ftboxes: \n")
 	fil.write("   m1.append("+ minor1_str + ") \n")
 	fil.write("   m2.append("+ minor2_str + ") \n")	
 	fil.write("innrer_loops=[i for i in range(m) if 0 in m1[i] and 0 in m2[i] ]\n")
 	fil.write("print(innrer_loops)\n")
 	fil.close()
-	
 	t=os.popen("python3 evaluation_file.py ").read()
 
 	return t
-def boxes_classifier(f,boxes,X,special_function=[]):
+def boxes_classifier(system,boxes,X,special_function=[]):
 	certified_boxes ,uncer_boxes =boxes
-	L=eval_file_gen(f,certified_boxes)
-
+	L=eval_file_gen(system,certified_boxes,X)
 	it=0
 	while L.replace('\n',"") != "[]" and it<2:
 		L=L.replace('[','')
 		L=L.replace(']','')
 		L=L.replace('\n','')
 		L=L.split(",")
-		#ploting_boxes(certified_boxes,[certified_boxes[int(i)] for i in L])
 		for i in L:
-
 			children=normal_subdivision(certified_boxes[int(i)])
 			certified_boxes.remove(certified_boxes[int(i)])
 			for child in children:
 
-				cer_children, uncer_children= solver(f,child,X)
+				cer_children, uncer_children= enclosing_boxes(system,child,X)
 				certified_boxes +=cer_children
 				uncer_boxes +=uncer_children
-
-		L =  eval_file_gen(f,certified_boxes)
+		L =  eval_file_gen(system,certified_boxes,X)
 		it+=1
-
 	L=L.replace('[','')
 	L=L.replace(']','')
 	L=L.replace('\n','')
 	L=L.split(",")
 	if L !=[""]:
-
 		L=[int(li) for li in L]
 		return 	[ [certified_boxes[i]  for i in range(len(certified_boxes)) if i not in L] ,\
 		[certified_boxes[i]  for i in L ], \
 		uncer_boxes ]
 	else:
-
-			return  [ [certified_boxes[i]  for i in range(len(certified_boxes)) if i not in L] ,[], uncer_boxes ]
+			return  [ [certified_boxes[i]  for i in range(len(certified_boxes)) if i not in L] ,[], uncer_boxes ] #can be enhanced
 def filtering_twins(solutions):
 	n=len(solutions[0])
 	ftsolutions=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in solutions ]
@@ -552,40 +606,85 @@ def filtering_twins(solutions):
 				twin[i].append(j)
 				twin[j].append(i)
 	return twin				
-
-def isolating_sing(f,B,X,P):
-	boxes=solver(f,B,X)
+def Ball_solver(system,B,X,eps=0.1):
+	P=[Pi.replace("\n","") for Pi in  open(system,"r").readlines()]
+	#computing enclosing boxes ####################
+	boxes=enclosing_boxes(system,B,X,eps)
 	certified_boxes, uncertified_boxes= boxes
-	classes= boxes_classifier(f,boxes,X,special_function=[])
-	#computing cusps:
+	classes= boxes_classifier(system,boxes,X,special_function=[])
+	#computing cusps:#####################
 	cusps=[]
 	for potantioal_cusp in classes[1]:
-		cusp=cusp_ibex_output(P,potantioal_cusp+[[-1.01,1.01]]*2)
+
+		cusp=cusp_Ball_solver(P,potantioal_cusp+[[-1.01,1.01]]*(len(P)-1)+[[-0.11,0.11]],X)
 		cusps +=cusp
-	
-
-	
-	nodes=solving_fornodes(f,boxes,B)
-
+	nodes=solving_fornodes(system,boxes,B,X)
 	return [[certified_boxes,uncertified_boxes] ,[nodes, cusps] ]
 
+def assum_alph3_checker(solutions):
+	comparing_list=[[]]*len(solutions)
+	for i in range(len(solutions)-1):
+		for j in range(i+1,len(solutions)):
+			if d.boxes_intersection(solutions[i][:2],solutions[j][:2]) !=[]:
+				comparing_list[i].append(j)
+				comparing_list[j].append(i)
+	matching=[len(T) for T in comparing_list]
+	if max(matching) <=2:
+		return 1
+	else:
+		return 0
+def checking_assumptions(curve_data): #the input of this function is the output of Ball_solver
+	if len(curve_data[0][1]) !=0 :
+		return 0
+	Ball_sols_ft=[[d.ftconstructor(Bi[0],Bi[1]) for Bi in B] for B in  curve_data[1][0]]+[[d.ftconstructor(Bi[0],Bi[1]) for Bi in B] for B in  curve_data[1][1]]
+	alph3=assum_alph3_checker(Ball_sols_ft)
+	if alph3==1 :
+		return 1
+	else:
+		return 0
+		
+
+	
 X=[]
-for i in range(4):
+for i in range(3):
 	X.append(sp.Symbol("x"+str(i+1)))
+system ="equations3.txt"
+B=[[-0.1,3.1],[-0.1,5.1],[-1.6,1.6]]
+boxes=Ball_solver(system,B,X,eps=0.03)
+print(checking_assumptions(boxes))
+"""print(len(cla[0]),len(cla[1]),len(cla[2]))
+print(cla[1])
+ploting_boxes(cla[0],cla[1])"""
+"""
+equations="equations1.txt" 
 
-P1="(x1 - 8*cos(x3))^2 + (x2 - 8*sin(x3) )^2 - 23"
-P2="(x1 - 9 - 5* cos(x4) )^2 + (x2 - 5* sin(x4))^2 - 60"
-P3="(16*(x1 - 8*cos(x3))*sin(x3) - 16*(x2 - 8*sin(x3))*cos(x3))*(-10*(x2 - 5*sin(x4))*cos(x4) + 10*(x1 - 5*cos(x4) - 9)*sin(x4))"
-P=[P1,P2,P3]
-
-f="equations1.txt" 
 B=[[-5,15],[-15,15],[-3.14,3.14],[-3.14,3.14]]
-#B=[[-3.1,3.1],[-1,9.1],[-3.14,3.14]]
 
-sing=(isolating_sing(f,B,X,P))
+T=branche_sing(equations,B,X)
 
-ploting_boxes(sing[0][0],sing[0][1],var=[2,3])
-#print(len(T[0]),len(T[1]))
+pickle_out=open("boxes_first_branch_silhouette","wb")
+pickle.dump(T,pickle_out)
+pickle_out.close()
+input('hi')
+components= detecting_nodes(boxes,B,equations,X)
+curve1=[[[[float( boxij[0].lower()),float( boxij[0].upper())] for boxij in boxi ] for boxi in componant] for componant in  components[0]]
+curve2=[[[[float( boxij[0].lower()),float( boxij[0].upper())] for boxij in boxi ] for boxi in componant] for componant in  components[1]]
+
+
+curve1=[[[[float( boxij[0].lower()),float( boxij[0].upper())] for boxij in boxi ] for boxi in componant] for componant in  components[0]]
+curve2=[[[[float( boxij[0].lower()),float( boxij[0].upper())] for boxij in boxi ] for boxi in componant] for componant in  components[1]]
+
+T1=[]
+
+print(len(curve1),len(curve2))
+for box in curve1[:1]:
+	T1 =T1+ box
+
+T2=[]
+
+for box in curve2[:]:
+	T2 =T2+ box
+#ploting_boxes(T1,T2,var=[2,3])"""
 
 
 

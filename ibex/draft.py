@@ -12,6 +12,31 @@ from pprint import pprint
 import operator
 import functools
 
+
+def sevr_mul(*arg):
+  answer=ft.arb(1)
+  for a in arg:
+   answer *= a
+  return answer
+
+def sevr_add(*arg):
+  answer=ft.arb(0)
+  for a in arg:
+   answer += a
+  return answer
+
+class interv(ft.arb):
+  def __pow__(self,n): 
+   
+   answer=interv(1)
+   for i in range(n):
+    answer *= self
+    return interv(answer)
+  def __str__(self):
+    return  str([float(self.lower()),float(self.upper())])
+  def __rmul__(self,other):
+    intervals_multi(self ,other)
+
 def lineno():
     """Returns the current line number in our program."""
     return inspect.currentframe().f_back.f_lineno
@@ -585,7 +610,9 @@ def power_interval(a,n):
         the_power=ft.arb(0.5*(a.lower())**n+0.5*(a.upper())**n,0.5*(a.upper())**n-0.5*(a.lower())**n)
     elif a.upper()<= 0:
         if n %2 ==0:
+            
             the_power=ft.arb(0.5*(a.lower())**n+0.5*(a.upper())**n,0.5*(a.lower())**n-0.5*(a.upper())**n)
+            
         else:
             the_power=ft.arb(0.5*(a.lower())**n+0.5*(a.upper())**n,0.5*(a.upper())**n-0.5*(a.lower())**n)
     else:
@@ -597,10 +624,6 @@ def power_interval(a,n):
         else:
             the_power1=ft.arb(0.5*(a1.lower())**n,-0.5*(a1.lower())**n)
         the_power=the_power1.union(the_power2)
-    #print("power")
-    #print(the_power.lower(),the_power.upper())
-   
-
   return the_power
 def intervals_multi(B1,B2): #does interval multiplication for B1,B2 if they are of different sign to avoid a bug in flint
     if type(B1)!=type(ft.arb(1)) :

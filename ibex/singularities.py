@@ -8,7 +8,7 @@ import draft as d
 import flint as ft
 import math
 from sympy.parsing.sympy_parser import parse_expr 
-
+#do not use it the same content is in computing_boxes
 
 def SDP_str(P):
     n=len(P)+1
@@ -47,12 +47,11 @@ def generating_system(P,B_Ball):
     
     f.write("end")
     f.close()
-def intersting_boxes(f,b):
+def intersting_boxes1(f,b):
     pickle_in=open(f,"rb")
     curve=pickle.load(pickle_in)
     pickle_in.close()
     intersting_boxes=[]
-
     uncer_boxes=[]
     for box in curve[0]:
         if  b[0][0] <= box[0][0] <= box[0][1] <=b[0][1] and \
@@ -63,7 +62,19 @@ def intersting_boxes(f,b):
           b[1][0] <= box[1][0] <= box[1][1] <=b[1][1]:
              uncer_boxes.append(box)
     return [intersting_boxes,uncer_boxes]  
-def finding_nodes(P,B):
+def intersting_boxes(curve,b):
+    cer_intersting_boxes=[]
+    uncer_intersting_boxes=[]
+    for box in curve[0]:
+        if  b[0][0] <= box[0][0] <= box[0][1] <=b[0][1] and \
+          b[1][0] <= box[1][0] <= box[1][1] <=b[1][1]:
+             cer_intersting_boxes.append(box)
+    for box in curve[1]:
+        if  b[0][0] <= box[0][0] <= box[0][1] <=b[0][1] and \
+          b[1][0] <= box[1][0] <= box[1][1] <=b[1][1]:
+             uncer_intersting_boxes.append(box)
+    return [cer_intersting_boxes,uncer_intersting_boxes]  
+def ibex_output(P,B):
     generating_system(P,B)
     os.system("ibexsolve   --eps-max=0.1 -s  eq.txt  > output.txt")
     g=open('output.txt','r')
@@ -168,14 +179,14 @@ def connected_compnants(boxes):
 def planner_connected_compnants(boxes): 
     ftboxes=boxes[:]
     #ftboxes=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in boxes ]
-    components=[[ftboxes[0]]]
+    components=[[ftboxes[0][1]]]
     for i in range(1,len(ftboxes)):
         boxi_isused=0
         for j in  range(len(components)):
             membership=0
             for k in range(len(components[j])):   
-                if d.boxes_intersection(ftboxes[i][:2],components[j][k][:2]) !=[] and \
-                d.boxes_intersection(ftboxes[i],components[j][k]) ==[]:
+                if d.boxes_intersection(ftboxes[i][1][:2],components[j][k][1][:2]) !=[] and \
+                d.boxes_intersection(ftboxes[i][1],components[j][k][1]) ==[]:
                     components[j].append(ftboxes[i])
                     membership=1
                     boxi_isused=1
@@ -197,8 +208,8 @@ def planner_connected_compnants(boxes):
                 for boxi in components[i]:
                     
                     for boxj in components[j]:
-                        if d.boxes_intersection(boxi,boxj)==[] and \
-                       d.boxes_intersection(boxi[:2],boxj[:2]) != []  :
+                        if d.boxes_intersection(boxi[1],boxj[1])==[] and \
+                       d.boxes_intersection(boxi[1][:2],boxj[1][:2]) != []  :
                             is_looping = False
                             intersection_exists=True
                             break
@@ -245,29 +256,33 @@ def estimating_r(components,upper_bound=1000):
 
   return y+r      
   
-def detecting_nodes(f,B):
-    boxes=intersting_boxes(f,B)[0]
-
-    boxes=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in boxes ]
+def detecting_nodes(boxes,B): #boxes are list of cer and uncer curve
+    mixes_boxes= [[1,box ] for box in boxes[0] ] +[[0,box ] for box in boxes[1]] #putting flaggs for cer and uncer boxes
+    ftboxes=[ [box[0], [d.ftconstructor(boxi[0],boxi[1])  for boxi in box[1]] ] for box in mixes_boxes ]
     nodes_lifting=[]
     used=[]
-
-    for i in range(len(boxes)):
-        for j in range(i+1,len(boxes)):
-            if d.boxes_intersection(boxes[i],boxes[j]) ==[] and \
-             d.boxes_intersection(boxes[i][:2],boxes[j][:2]) :
+    for i in range(len(ftboxes)):
+        for j in range(i+1,len(ftboxes)):
+            if d.boxes_intersection(ftboxes[1][i],ftboxes[1][j]) ==[] and \
+             d.boxes_intersection(ftboxes[1][i][:2],ftboxes[1][j][:2]) :
                 if i not in used:
                     used.append(i)
-                    nodes_lifting.append(boxes[i])
+                    nodes_lifting.append(ftboxes[i])
                 if j not in used:
                     used.append(j)
-                    nodes_lifting.append(boxes[j])
+                    nodes_lifting.append(ftboxes[j])
     components= planner_connected_compnants(nodes_lifting)
+    cer_components=[]
+    uncer_components=[]
+    for component in components:
+        if 0 in [ box[0] for box in  component]:
+            cer_components.append([box[1] for box in component])
+        else:
+            uncer_components.append([box[1] for box in component])
+    return [cer_components,uncer_components]         
 
-    return components           
-
-def solving_fornodes(equations,f,B):
-    plane_components=detecting_nodes(f,B)
+def solving_fornodes(equations,boxes,B):
+    plane_components=detecting_nodes(boxes,B)[0]
     g=open(equations,'r')
     P=[ Pi.replace("\n","") for Pi in   g.readlines()  ]
     Ball_solutions=[]
@@ -277,22 +292,15 @@ def solving_fornodes(equations,f,B):
         y1=float(min([ai[1].lower() for ai in plane_component]))
         y2=float(max([ai[1].upper() for ai in plane_component]))
         components=connected_compnants(plane_component)
-
         r=[ [float(ri[0]),float(ri[1])] for ri in    estimating_r(components)   ]
         t=estimating_t(components)
         t=[float(t[0]),float(t[1])]
         B_Ball=[[x1,x2],[y1,y2]]+r +[t]
 
         generating_system(P,B_Ball)
-        solutionsi=finding_nodes(P,B_Ball)
+        solutionsi=ibex_output(P,B_Ball)
 
         Ball_solutions +=solutionsi
-        #pprint(B_Ball[:])
-        #print(solutionsi)
-
-        
-
-
     return Ball_solutions
 
 
