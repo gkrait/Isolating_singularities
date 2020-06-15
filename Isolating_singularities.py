@@ -459,8 +459,9 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,n
    c=0
    green_patch = mpatches.Patch(color='green', label='smooth part')
    red_patch = mpatches.Patch(color='red', label='unknown part')
-   #black_patch = mpatches.Patch(color='black', label='Certified nodes',fill=None)
-   plt.legend(handles=[green_patch,red_patch])
+   node_patch = mpatches.Patch(color='black', label='Certified nodes',fill=None)
+   cusp_patch = mpatches.Patch(color='blue', label='cusps or small nodes',fill=None)
+   plt.legend(handles=[green_patch,red_patch,node_patch,cusp_patch])
    for box in boxes:
      rectangle= plt.Rectangle((box[var[0]][0],box[var[1]][0]) , \
     	a*(box[var[0]][1]-box[var[0]][0]),a*(box[var[1]][1]-box[var[1]][0]), fc=color)
@@ -479,13 +480,15 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,n
      x_center=0.5*(box[0][0]+box[0][1])
      y_center=0.5*(box[1][0]+box[1][1])
      r=max(box[0][1]-box[0][0],box[1][1]-box[1][0])+0.1
-     circle=plt.Circle((x_center,y_center), radius=r,color='red') 
-     plt.gca().add_patch(circle)
+     rectangle= plt.Rectangle((box[0][0]-0.15,box[1][0]-0.15) , \
+      (box[0][1]-box[0][0]+0.3),(box[1][1]-box[1][0]+0.3),color="blue", fc='y',fill=None)
+     plt.gca().add_patch(rectangle)
+
 
 
 
    plt.show()
-def enclosing_boxes(system,B,X,eps=0.1): 
+def enclosing_curve(system,B,X,eps=0.1): 
   L=[B]
   certified_boxes=[]
   uncertified_boxes=[]
@@ -513,12 +516,11 @@ def loopsfree_checker(f,certified_boxes,uncer_boxes,P): #Assumption: no cusps
 		L=L.replace(']','')
 		L=L.replace('\n','')
 		L=L.split(",")
-		#ploting_boxes(certified_boxes,[certified_boxes[int(i)] for i in L])
 		for i in L:
 			children=normal_subdivision(certified_boxes[int(i)])
 			certified_boxes.remove(certified_boxes[int(i)])
 			for child in children:
-				cer_children, uncer_children= enclosing_boxes(f,child,X)
+				cer_children, uncer_children= enclosing_curve(f,child,X)
 				certified_boxes +=cer_children
 				uncer_boxes +=uncer_children
 		L =  eval_file_gen(f,certified_boxes,X)
@@ -540,7 +542,7 @@ def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is e
 	fil=open("evaluation_file.py","w")
 	fil.write("import flint as ft \n")
 	fil.write("import sympy as sp \n")
-	fil.write("import draft as d \n")
+	fil.write("import interval_arithmetic as d \n")
 	fil.write("def eval_func():\n  pass \n")
 	fil.write("boxes="+str(boxes)+"\n")
 	fil.write("ftboxes=[ [d.ftconstructor(Bi[0],Bi[1]) for Bi in B ] for B in boxes ] \n"    )
@@ -579,7 +581,7 @@ def boxes_classifier(system,boxes,X,special_function=[]):
 			certified_boxes.remove(certified_boxes[int(i)])
 			for child in children:
 
-				cer_children, uncer_children= enclosing_boxes(system,child,X)
+				cer_children, uncer_children= enclosing_curve(system,child,X)
 				certified_boxes +=cer_children
 				uncer_boxes +=uncer_children
 		L =  eval_file_gen(system,certified_boxes,X)
@@ -607,16 +609,22 @@ def filtering_twins(solutions):
 				twin[j].append(i)
 	return twin				
 def enclosing_singularities(system,boxes,B,X,eps=0.1):
-	P=[Pi.replace("\n","") for Pi in  open(system,"r").readlines()]
-	certified_boxes, uncertified_boxes= boxes
-	classes= boxes_classifier(system,boxes,X,special_function=[])
-	#computing cusps:#####################
-	cusps=[]
-	for potantioal_cusp in classes[1]:
-		cusp=cusp_Ball_solver(P,potantioal_cusp+[[-1.01,1.01]]*(len(P)-1)+[[-0.11,0.11]],X)
-		cusps +=cusp
-	nodes=solving_fornodes(system,boxes,B,X)
-	return [nodes, cusps] 
+  P=[Pi.replace("\n","") for Pi in  open(system,"r").readlines()]
+	
+  certified_boxes, uncertified_boxes= boxes
+	
+  classes= boxes_classifier(system,boxes,X,special_function=[])
+	
+  #computing cusps:#####################
+	
+  cusps=[]
+	
+  for potantioal_cusp in classes[1]:
+    cusp=cusp_Ball_solver(P,potantioal_cusp+[[-1.01,1.01]]*(len(P)-1)+[[-0.11,0.11]],X)
+    cusps +=cusp
+  nodes=solving_fornodes(system,boxes,B,X) 
+  return [nodes, cusps]  
+		
 
 def assum_alph3_checker(solutions):
 	comparing_list=[[]]*len(solutions)
@@ -639,6 +647,38 @@ def checking_assumptions(curve_data): #the input of this function is the output 
 		return 1
 	else:
 		return 0
+
+
+
+
+
+
+fil=open("system.txt","w")
+fil.write("(x1 - 8*cos(x3))^2 + (x2 - 8*sin(x3) )^2 - 23 \n")
+fil.write("(x1 - 9 - 5* cos(x4) )^2 + (x2 - 5* sin(x4))^2 - 60 \n")
+fil.write( "(2*x1 - 16*cos(x3))*(2*x2 - 10*sin(x4)) - (2*x2 - 16*sin(x3))*(2*x1 - 10*cos(x4) - 18)")
+fil.close()
+##################################
+#Declaring parameters #######
+##################################
+"""System="system.txt" 
+Box=[[-5,15],[-15,15],[-3.14,3.14],[-3.14,3.14]]
+X=[sp.Symbol("x"+str(i)) for i in range(1,5)]
+
+##################################
+#Applying the function #######
+##################################
+boxes =enclosing_curve(System,Box,X)
+
+
+nodes, nodes_or_cusps=enclosing_singularities(System,boxes,Box,X)
+
+#plotting the singularities
+ploting_boxes(boxes[0],boxes[1],B=[[-5,15],[-15,15]]\
+                  ,nodes=nodes, cusps=nodes_or_cusps)
+"""
+
+
 
 """ss	
 X=[]

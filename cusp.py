@@ -152,7 +152,7 @@ def evaluation_exp(expr,B,X):
     expr_int=expr_int.replace("t","B_f["+str(len(X)-1)+"]") 
     f=open("evaluation_file.py","w")
     f.write("import flint as ft\n")
-    f.write("import draft as d \n")
+    f.write("import interval_arithmetic as d \n")
     f.write("from sympy.parsing.sympy_parser import parse_expr \n")
     f.write("from sympy import * \n")
     f.write("from numpy import * \n")
