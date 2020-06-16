@@ -653,11 +653,6 @@ def checking_assumptions(curve_data): #the input of this function is the output 
 
 
 
-fil=open("system.txt","w")
-fil.write("(x1 - 8*cos(x3))^2 + (x2 - 8*sin(x3) )^2 - 23 \n")
-fil.write("(x1 - 9 - 5* cos(x4) )^2 + (x2 - 5* sin(x4))^2 - 60 \n")
-fil.write( "(2*x1 - 16*cos(x3))*(2*x2 - 10*sin(x4)) - (2*x2 - 16*sin(x3))*(2*x1 - 10*cos(x4) - 18)")
-fil.close()
 ##################################
 #Declaring parameters #######
 ##################################
