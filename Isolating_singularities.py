@@ -7,7 +7,7 @@ from pprint import pprint
 from sympy.parsing.sympy_parser import parse_expr
 import sympy as sp 
 import os 
-from cusp import cusp_Ball_solver
+from cusp import cusp_Ball_solver, evaluation_exp
 import matplotlib.patches as mpatches
 
 
@@ -73,10 +73,6 @@ def Ball_solver(equations,B_Ball,X):     #the width condition needs to be added
 			  L += children
 		
 	return [certified_boxes,uncertified_boxes]		
-		
-
-
-
 def boxes_intersection(B1,B2):
   inters=[]
   for i in range(len(B1)):
@@ -330,28 +326,36 @@ def estimating_r(components,upper_bound=1000):
         r.append([ri1,ri2])    
 
   return y+r       
-def detecting_nodes(boxes,B,f,X): #boxes are list of cer and uncer curve
+def detecting_nodes(boxes,B,f,X,eps): #boxes are list of cer and uncer curve
     mixes_boxes= [[1,box ] for box in boxes[0] ] +[[0,box ] for box in boxes[1]] #putting flaggs for cer and uncer boxes
-
-    ftboxes=[ [box[0], [d.ftconstructor(boxi[0],boxi[1])  for boxi in box[1]] ] for box in mixes_boxes ]
-    
+    ftboxes=[ [box[0], [d.ftconstructor(boxi[0],boxi[1])  for boxi in box[1]] ] for box in mixes_boxes ]    
     nodes_lifting=[]
     used=[]
+    P=[ Pi.replace("\n","") for Pi in   open(f,"r").readlines()  ]
     for i in range(len(ftboxes)):
         for j in range(i+1,len(ftboxes)):
-            if d.boxes_intersection(ftboxes[i][1],ftboxes[j][1]) ==[] and \
-             d.boxes_intersection(ftboxes[i][1][:2],ftboxes[j][1][:2]) :
+            Mariam_ft=d.boxes_intersection(ftboxes[i][1],ftboxes[j][1])
+            Mariam=[[float(Bi.lower()),float(Bi.upper()) ] for Bi in Mariam_ft]
+            
+            """d.ftprint(ftboxes[i][1])
+            print()
+            d.ftprint(ftboxes[j][1])
+            print()
+            print(curve_in_intersec)
+            input()"""
+            if (Mariam ==[] and \
+             d.boxes_intersection(ftboxes[i][1][:2],ftboxes[j][1][:2])) or\
+               (Mariam != [] and enclosing_curve(f,Mariam,X,eps*0.1) ==[[],[]] ): #needs to work more
                 if i not in used:
                     used.append(i)
                     nodes_lifting.append(ftboxes[i])
                 if j not in used:
                     used.append(j)
                     nodes_lifting.append(ftboxes[j])
-             
     components= planner_connected_compnants(nodes_lifting)
     cer_components=[]
     uncer_components=[]
-    component_normal=[ ]
+    component_normal=[]
     for component in components:
         boxes_component=[box[1] for box in component]
         component_normal =[ [[ float(Bi.lower()),  float(Bi.upper()) ] for Bi in box[1] ] for box in component ]
@@ -360,8 +364,8 @@ def detecting_nodes(boxes,B,f,X): #boxes are list of cer and uncer curve
         else:
             uncer_components.append(boxes_component)
     return [cer_components,uncer_components]         
-def solving_fornodes(equations,boxes,B,X):
-    plane_components=detecting_nodes(boxes,B,equations,X)[0]
+def solving_fornodes(equations,boxes,B,X,eps=0.1):
+    plane_components=detecting_nodes(boxes,B,equations,X,eps)[0]
     g=open(equations,'r')
     P=[ Pi.replace("\n","") for Pi in   g.readlines()  ]
     Ball_solutions=[]
@@ -394,6 +398,7 @@ def system_generator(f,B,X):
     f = open("eq.txt", "w+")
     f.write("Variables \n")
     for i in range(len(X)):
+        
         f.write(str(X[i]) + " in " + str(B[i]) + " ; \n")
     f.write("Constraints \n")
     for Li in L:
@@ -470,8 +475,6 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,n
     	rectangle= plt.Rectangle((box[var[0]][0],box[var[1]][0]) , \
     	a*(box[var[0]][1]-box[var[0]][0]),a*(box[var[1]][1]-box[var[1]][0]), fc='r')
     	plt.gca().add_patch(rectangle)
-
-
    for box in nodes:
      rectangle= plt.Rectangle((box[0][0]-0.15,box[1][0]-0.15) , \
     	(box[0][1]-box[0][0]+0.3),(box[1][1]-box[1][0]+0.3), fc='y',fill=None)
@@ -483,10 +486,6 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,n
      rectangle= plt.Rectangle((box[0][0]-0.15,box[1][0]-0.15) , \
       (box[0][1]-box[0][0]+0.3),(box[1][1]-box[1][0]+0.3),color="blue", fc='y',fill=None)
      plt.gca().add_patch(rectangle)
-
-
-
-
    plt.show()
 def enclosing_curve(system,B,X,eps=0.1): 
   L=[B]
@@ -507,8 +506,7 @@ def enclosing_curve(system,B,X,eps=0.1):
       children=plane_subdivision(L[0])
       L.remove(L[0])
       L += children
-  return [certified_boxes,uncertified_boxes]                      
-    
+  return [certified_boxes,uncertified_boxes]                        
 def loopsfree_checker(f,certified_boxes,uncer_boxes,P): #Assumption: no cusps
 	L=eval_file_gen(f,certified_boxes,X)
 	while L.replace('\n',"") != "[]":
@@ -524,8 +522,7 @@ def loopsfree_checker(f,certified_boxes,uncer_boxes,P): #Assumption: no cusps
 				certified_boxes +=cer_children
 				uncer_boxes +=uncer_children
 		L =  eval_file_gen(f,certified_boxes,X)
-	return L	
-    
+	return L	   
 def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is even
 	functions=["sin","cos","tan","exp"]+special_function
 	n=len(boxes[0])
@@ -565,7 +562,6 @@ def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is e
 	fil.write("print(innrer_loops)\n")
 	fil.close()
 	t=os.popen("python3 evaluation_file.py ").read()
-
 	return t
 def boxes_classifier(system,boxes,X,special_function=[]):
 	certified_boxes ,uncer_boxes =boxes
@@ -622,10 +618,8 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1):
   for potantioal_cusp in classes[1]:
     cusp=cusp_Ball_solver(P,potantioal_cusp+[[-1.01,1.01]]*(len(P)-1)+[[-0.11,0.11]],X)
     cusps +=cusp
-  nodes=solving_fornodes(system,boxes,B,X) 
+  nodes=solving_fornodes(system,boxes,B,X,eps) 
   return [nodes, cusps]  
-		
-
 def assum_alph3_checker(solutions):
 	comparing_list=[[]]*len(solutions)
 	for i in range(len(solutions)-1):
@@ -650,8 +644,15 @@ def checking_assumptions(curve_data): #the input of this function is the output 
 
 
 
+System="system.txt" 
+Box=[[-1.03,4.03],[-1.03,5.03],[-1.6,1.6]]
+X=[sp.Symbol("x"+str(i)) for i in range(1,4)]
+boxes =enclosing_curve(System,Box,X)   
 
-
+nodes, nodes_or_cusps=enclosing_singularities(System,boxes,Box,X)
+#plotting the singularities
+ploting_boxes(boxes[0],boxes[1],B=[[-5,5],[-5,5]]\
+                  ,nodes=nodes, cusps=nodes_or_cusps)
 
 ##################################
 #Declaring parameters #######
