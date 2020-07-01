@@ -833,12 +833,11 @@ def connected_components(list_of_boxes):  #Returns the connected components of l
 def distance(B1,B2):
   norm=ft.arb(0)
   for i in range(len(B1)):
-
       norm += power_interval(B1[i]-B2[i],2)
   if norm.lower()>=0:
     return ftconstructor(math.sqrt(float(norm.lower())),math.sqrt(float(norm.upper())))
   else :
-   return ft.arb(math.sqrt(float(norm.upper())),math.sqrt(float(norm.upper())))   
+   return ftconstructor(0,math.sqrt(float(norm.upper())))   
 
                                              
     

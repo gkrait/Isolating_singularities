@@ -24,8 +24,8 @@ def Ball_node_gen(equations,B_Ball,X):
     V += "t" + " in " + str(B_Ball[2*n-2]) +" ; \n"       
     V +="Constraints \n"   
     for Pi in P:
-        V += cb.SDP_str(Pi,X)[0]
-        V += cb.SDP_str(Pi,X)[1]
+        V += SDP_str(Pi,X)[0]
+        V += SDP_str(Pi,X)[1]
     last_eq=""
     for i in range(3,n):
         last_eq += "r"+str(i)+"^2+"
@@ -35,13 +35,12 @@ def Ball_node_gen(equations,B_Ball,X):
     f.write(V) 
     f.write("end")
     f.close() 
-def Ball_solver(equations,B_Ball,X):     #the width condition needs to be added
+def Ball_solver(equations,B_Ball,X):     #the width condition needs to be added  Do not suse this one 
 	L=[B_Ball]
 	certified_boxes=[]
 	uncertified_boxes=[]
 	n=len(X)
 	while len(L) !=0: 
-	
 		solvability=1
 		if B_Ball[2*n-2][0] <= 0 <=   B_Ball[2*n-2][1] and \
 		d.width([ d.ftconstructor(Bi[0],Bi[1]) for Bi in L[0] ] ) <0.1 :
@@ -72,7 +71,7 @@ def Ball_solver(equations,B_Ball,X):     #the width condition needs to be added
 			  L.remove(L[0])
 			  L += children
 		
-	return [certified_boxes,uncertified_boxes]		
+	return [certified_boxes,uncertified_boxes]		  
 def boxes_intersection(B1,B2):
   inters=[]
   for i in range(len(B1)):
@@ -93,7 +92,7 @@ def SDP_str(P,X):
     SP= "0.5*(" + P_pluse + "+" +P_minus+")=0; \n"
     DP= "0.5*(" + P_pluse + "- (" +P_minus+") )/(sqrt(t))=0; \n"
     return [SP,DP]
-def generating_system(P,B_Ball,X):
+def Ball_generating_system(P,B_Ball,X):
     n=len(X)
     V=""" Variables \n """
     for i in range(n):
@@ -145,7 +144,6 @@ def intersting_boxes(curve,b):
              uncer_intersting_boxes.append(box)
     return [cer_intersting_boxes,uncer_intersting_boxes]  
 def ibex_output(P,B,X):
-    generating_system(P,B,X)
     os.system("ibexsolve   --eps-max=0.1 -s  eq.txt  > output.txt")
     g=open('output.txt','r')
     result=g.readlines()
@@ -153,7 +151,7 @@ def ibex_output(P,B,X):
     T=computing_boxes(result)
 
     return T    
-def estimating_t1(components,upper_bound=200):  #it works only if len(components)
+def estimating_t1(components,upper_bound=200000):  #it works only if len(components)
   t1=upper_bound
   t2=0
   for box1 in components[0]:
@@ -168,22 +166,22 @@ def estimating_t1(components,upper_bound=200):  #it works only if len(components
   t=0.25*d.power_interval(t,2)     
 
   return [float(t.lower()),float(t.upper())]     
-def estimating_t(components,upper_bound=19.8):  #it works only if len(components)
+def estimating_t(components,upper_bound=19000.8):  #it works only if len(components)
   t1=upper_bound
   t2=0
   for box1 in components[0]:
     for box2 in components[1]:
-        a=d.distance(box1,box2).lower()
-        b=d.distance(box1,box2).upper()
-
-    if t1 > a:
-     t1=a 
-    if t2<b:
-     t2=b 
+        a=d.distance(box1[2:],box2[2:]).lower()
+        b=d.distance(box1[2:],box2[2:]).upper()
+        if t1 > a:
+          t1=a
+        if t2<b:
+           t2=b  
   t=d.ftconstructor(t1,t2)
   t=0.25*d.power_interval(t,2) 
-
   return [float(t.lower()),float(t.upper())] 
+
+
 def boxes_compare(box1,box2):
     flage=0
     for i in range(len(box1)-1,-1,-1):
@@ -244,8 +242,7 @@ def connected_compnants(boxes):
             components2=components1[:]
             components1=[components[k] for k in unused ]                    
 
-    return components1                   
-     
+    return components1                        
 def planner_connected_compnants(boxes): 
     ftboxes=boxes[:]
     #ftboxes=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in boxes ]
@@ -298,7 +295,7 @@ def planner_connected_compnants(boxes):
 
 
     return components      
-def estimating_r(components,upper_bound=1000):
+def estimating_yandr(components,upper_bound=100000):
   r_bounds=[[upper_bound,0]]*(len(components[0][0])-2)
   r_list=[]
   y_list=[]
@@ -311,15 +308,10 @@ def estimating_r(components,upper_bound=1000):
         r_list.append(r)
   r=[]
   y=[]
-
-      
-  
   for i in range(len(y_list[0])):
     yi1=min([float(y[i].lower()) for y in y_list  ])
     yi2=max([float(y[i].upper()) for y in y_list  ])
     y.append([yi1,yi2])
-
-    
   for i in range(len(r_list[0])):
         ri1=min([float(r[i].lower()) for r in r_list  ])
         ri2=max([float(r[i].upper()) for r in r_list  ])
@@ -336,13 +328,6 @@ def detecting_nodes(boxes,B,f,X,eps): #boxes are list of cer and uncer curve
         for j in range(i+1,len(ftboxes)):
             Mariam_ft=d.boxes_intersection(ftboxes[i][1],ftboxes[j][1])
             Mariam=[[float(Bi.lower()),float(Bi.upper()) ] for Bi in Mariam_ft]
-            
-            """d.ftprint(ftboxes[i][1])
-            print()
-            d.ftprint(ftboxes[j][1])
-            print()
-            print(curve_in_intersec)
-            input()"""
             if (Mariam ==[] and \
              d.boxes_intersection(ftboxes[i][1][:2],ftboxes[j][1][:2])) or\
                (Mariam != [] and enclosing_curve(f,Mariam,X,eps*0.1) ==[[],[]] ): #needs to work more
@@ -361,11 +346,23 @@ def detecting_nodes(boxes,B,f,X,eps): #boxes are list of cer and uncer curve
         component_normal =[ [[ float(Bi.lower()),  float(Bi.upper()) ] for Bi in box[1] ] for box in component ]
         if 0  not in [ box[0] for box in  component]  and eval_file_gen(f,component_normal,X) =="[]\n" :
             cer_components.append(boxes_component)
-        else:
+        else: 
             uncer_components.append(boxes_component)
     return [cer_components,uncer_components]         
+def intersect_in_2D(class1,class2):
+  class1_ft=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in class1 ]
+  class2_ft=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in class2 ]
+  pl_intesected_pairs=[]
+  for i in range(len(class1_ft)):
+    for j in range(len(class2_ft)):
+      if boxes_intersection(class1_ft[i][:2],class2_ft[j][:2]) !=[] and class1[i] !=class2[j]:
+        if [class2[j],class1[i]] not in pl_intesected_pairs:
+          pl_intesected_pairs.append([class1[i],class2[j]])
+       
+
+  return pl_intesected_pairs     
 def solving_fornodes(equations,boxes,B,X,eps=0.1):
-    plane_components=detecting_nodes(boxes,B,equations,X,eps)[0]
+    plane_components=detecting_nodes(boxes,B,equations,X,eps)#[0]
     g=open(equations,'r')
     P=[ Pi.replace("\n","") for Pi in   g.readlines()  ]
     Ball_solutions=[]
@@ -379,7 +376,7 @@ def solving_fornodes(equations,boxes,B,X,eps=0.1):
         t=estimating_t(components)
         t=[float(t[0]),float(t[1])]
         B_Ball=[[x1,x2],[y1,y2]]+r +[t]
-        generating_system(P,B_Ball,X)
+        Ball_generating_system(P,B_Ball,X)
         solutionsi=ibex_output(P,B_Ball,X)
         Ball_solutions +=solutionsi
     return Ball_solutions
@@ -413,46 +410,53 @@ def solving_with_ibex(eps=0.1):
 	uncer_content=[]
 	cer_content=[]
 	os.system("ibexsolve   --eps-max="+ str(eps) +" -s  eq.txt  > output.txt")
-
 	g=open('output.txt','r')
 	result=g.read()
 	with open('output.txt') as f:
 		if "successful" in result:
 			cer_content = f.readlines()
-		elif  "infeasible problem" not in result and "done! but some boxes" in result:
+		elif  "infeasible" not in result and "done! but some boxes" in result:
 			uncer_content = f.readlines()
 		elif "infeasible problem" in result:
 			uncer_content="Empty"
 			cer_content="Empty"
 	return [cer_content,uncer_content]			
-def computing_boxes(content):
- i=0
- Answer=[]
- for fi in content:
- 	try:
- 	 a=fi.index('(')
- 	 b=fi.index(')')
- 	 T=(fi[a:b+1]).replace('(','[')
- 	 T=T.replace(')',']')
- 	 T=T.split(";")
+def computing_boxes():
+  if "infeasible" in open("output.txt","r").read():
+    return "Empty"
+  content=open("output.txt","r").readlines()
+  cer=[]; uncer=[]
+  i=0
+  Answer=[]
+  for fi in content:
+    try:
+      a=fi.index('(')
+      b=fi.index(')')
+      T=(fi[a:b+1]).replace('(','[')
+      T=(fi[a:b+1]).replace('(','[')
+      T=T.replace(')',']')
+      T=T.split(";")
+      E=[]
+      i=0
+      for Ti in T:
+        Ti= Ti.replace('[',"")
+        Ti= Ti.replace(']',"")
+        Ti=Ti.replace('<','')
+        Ti=Ti.replace('>','')
+        x=Ti.index(",")
+        a=float(Ti[:x])
+        b=float(Ti[x+1:])
+        E.append([])
+        E[i]=[a,b]
+        i+=1
+      if "solution n" in fi or "boundary n" in fi:
+        cer.append(E)
+      elif "unknown n" in fi:
+        uncer.append(E)
+    except ValueError:
+          pass 
+  return [cer,uncer]        
 
- 	 E=[]
- 	 i=0
- 	 for Ti in T:
- 	 	Ti= Ti.replace('[',"")
- 	 	Ti= Ti.replace(']',"")
- 	 	Ti=Ti.replace('<','')
- 	 	Ti=Ti.replace('>','')
- 	 	x=Ti.index(",")
- 	 	a=float(Ti[:x])
- 	 	b=float(Ti[x+1:])
- 	 	E.append([])
- 	 	E[i]=[a,b]
- 	 	i+=1
- 	 Answer.append(E)
- 	except ValueError:
- 		pass 
- return Answer
 def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,nodes=[], cusps=[],color="g"):
    fig, ax = plt.subplots()
    plt.grid(True)
@@ -476,8 +480,8 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,n
     	a*(box[var[0]][1]-box[var[0]][0]),a*(box[var[1]][1]-box[var[1]][0]), fc='r')
     	plt.gca().add_patch(rectangle)
    for box in nodes:
-     rectangle= plt.Rectangle((box[0][0]-0.15,box[1][0]-0.15) , \
-    	(box[0][1]-box[0][0]+0.3),(box[1][1]-box[1][0]+0.3), fc='y',fill=None)
+     rectangle= plt.Rectangle((box[0][0]-0.005,box[1][0]-0.005) , \
+    	(box[0][1]-box[0][0]+0.03),(box[1][1]-box[1][0]+0.03), fc='y',fill=None)
      plt.gca().add_patch(rectangle) 
    for box in cusps:
      x_center=0.5*(box[0][0]+box[0][1])
@@ -491,21 +495,25 @@ def enclosing_curve(system,B,X,eps=0.1):
   L=[B]
   certified_boxes=[]
   uncertified_boxes=[]
-  while len(L) !=0:
+  while len(L) !=0: 
     system_generator(system,L[0],X)
-    ibex_output=solving_with_ibex(eps)
-    if ibex_output[0]== "Empty":
-      L.remove(L[0])
-    elif len(ibex_output[0]) !=0:
-      certified_boxes +=computing_boxes(ibex_output[0])
-      L.remove(L[0])
-    elif len(ibex_output[1])!=0: 
-      uncertified_boxes +=computing_boxes(ibex_output[1])
-      L.remove(L[0])
-    else:  
+    content=open("output.txt","r").readlines()
+    os.system("ibexsolve   --eps-max=" + str(eps) +" -s  eq.txt  > output.txt")
+    ibex_output=computing_boxes()
+    #ibex_output=solving_with_ibex(eps)
+    if ibex_output ==[[],[]]:  
       children=plane_subdivision(L[0])
       L.remove(L[0])
       L += children
+    elif ibex_output== "Empty":
+      L.remove(L[0])
+    else:
+      if len(ibex_output[0]) !=0:
+       certified_boxes += ibex_output[0]
+      if len(ibex_output[1])!=0: 
+       uncertified_boxes += ibex_output[0]
+      L.remove(L[0]) 
+    
   return [certified_boxes,uncertified_boxes]                        
 def loopsfree_checker(f,certified_boxes,uncer_boxes,P): #Assumption: no cusps
 	L=eval_file_gen(f,certified_boxes,X)
@@ -567,21 +575,6 @@ def boxes_classifier(system,boxes,X,special_function=[]):
 	certified_boxes ,uncer_boxes =boxes
 	L=eval_file_gen(system,certified_boxes,X)
 	it=0
-	while L.replace('\n',"") != "[]" and it<2:
-		L=L.replace('[','')
-		L=L.replace(']','')
-		L=L.replace('\n','')
-		L=L.split(",")
-		for i in L:
-			children=normal_subdivision(certified_boxes[int(i)])
-			certified_boxes.remove(certified_boxes[int(i)])
-			for child in children:
-
-				cer_children, uncer_children= enclosing_curve(system,child,X)
-				certified_boxes +=cer_children
-				uncer_boxes +=uncer_children
-		L =  eval_file_gen(system,certified_boxes,X)
-		it+=1
 	L=L.replace('[','')
 	L=L.replace(']','')
 	L=L.replace('\n','')
@@ -604,17 +597,41 @@ def filtering_twins(solutions):
 				twin[i].append(j)
 				twin[j].append(i)
 	return twin				
+def Ball_given_2nboxes(system,X, B1,B2, monotonicity_B1=1,monotonicity_B2=1):
+  B1_ft=[d.ftconstructor(Bi[0],Bi[1]) for Bi in B1]
+  B2_ft=[d.ftconstructor(Bi[0],Bi[1]) for Bi in B2]
+  P=[Pi.replace("\n","") for Pi in  open(system,"r").readlines()]
+  sol="Empty"
+  if d.boxes_intersection(B1_ft, B2_ft) ==[] and monotonicity_B1== monotonicity_B2==1:
+    t=estimating_t([[B1_ft], [B2_ft]])
+    y_and_r=estimating_yandr([[B1_ft], [B2_ft]])
+    intersec_B1B2_in2d=d.boxes_intersection(B1_ft[:2],B2_ft[:2])
+    intersec_B1B2_in2d=[ [float(Bi.lower()),float(Bi.upper())]  for Bi in intersec_B1B2_in2d ]
+    B_Ball=intersec_B1B2_in2d +y_and_r +[t]
+    Ball_node_gen(system,B_Ball,X)
+    os.system("ibexsolve   --eps-max=0.1 -s  eq.txt  > output.txt")
+    sol=computing_boxes()
+  if d.boxes_intersection(B1_ft, B2_ft) ==[]:
+    pass
+  return sol  
 def enclosing_singularities(system,boxes,B,X,eps=0.1):
   P=[Pi.replace("\n","") for Pi in  open(system,"r").readlines()]
-	
   certified_boxes, uncertified_boxes= boxes
-	
   classes= boxes_classifier(system,boxes,X,special_function=[])
-	
+  #Solving Ball for B1 and B2 in R^n such that C is monotonic in B1 and B2
+  
+  T=intersect_in_2D(classes[0],classes[0])
+  cer_Solutions=[]
+  uncer_Solutions=[]
+  for Ti in T:
+    sol=Ball_given_2nboxes(system,X, Ti[0],Ti[1])
+    if sol != "Empty":
+      cer_Solutions += sol[0]
+      uncer_Solutions += sol[1]  
+  ploting_boxes(certified_boxes,[],nodes=cer_Solutions)
+  input()
   #computing cusps:#####################
-	
   cusps=[]
-	
   for potantioal_cusp in classes[1]:
     cusp=cusp_Ball_solver(P,potantioal_cusp+[[-1.01,1.01]]*(len(P)-1)+[[-0.11,0.11]],X)
     cusps +=cusp
@@ -642,18 +659,16 @@ def checking_assumptions(curve_data): #the input of this function is the output 
 	else:
 		return 0
 
-
-
 System="system.txt" 
-Box=[[-1.03,4.03],[-1.03,5.03],[-1.6,1.6]]
+Box=[[-1.03,4.03],[-1.03,5.03],[-1,1]]
 X=[sp.Symbol("x"+str(i)) for i in range(1,4)]
-boxes =enclosing_curve(System,Box,X)   
+boxes =enclosing_curve(System,Box,X,eps=0.05)
+
 
 nodes, nodes_or_cusps=enclosing_singularities(System,boxes,Box,X)
 #plotting the singularities
-ploting_boxes(boxes[0],boxes[1],B=[[-5,5],[-5,5]]\
-                  ,nodes=nodes, cusps=nodes_or_cusps)
 
+ploting_boxes(boxes[0],[],B=[[-5,5],[-5,5]])
 ##################################
 #Declaring parameters #######
 ##################################
