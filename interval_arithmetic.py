@@ -336,14 +336,21 @@ def interval_difference_enclosure(a,b):
               Difference=a
      return  Difference
 def boxes_intersection(B1,B2):
-  inters=[]
-  for i in range(len(B1)):
-    try:
-      inters.append(B1[i].intersection(B2[i]))
-    except:
-      inters=[]
-      break  
-  return inters    
+  if type(B1[0])==type(ft.arb(1)):
+    inters=[]
+    for i in range(len(B1)):
+       try:
+         inters.append(B1[i].intersection(B2[i]))
+       except:
+         inters=[]
+         break
+    return  inters     
+  elif type(B1[0])==type([]):
+    B1_ft=[ftconstructor(Bi[0],Bi[1]) for Bi in B1]
+    B2_ft=[ftconstructor(Bi[0],Bi[1]) for Bi in B2]
+    intersec= boxes_intersection(B1_ft,B2_ft)
+    return [[float(Bi.lower()),float(Bi.upper())] for Bi in intersec]
+    
 
 def intersection_of_bounded_with_unbounded_interval(x,boundary,infty): #returns the intersection of x with [boundary, infty] where infty= 1 or -1  is corresponding to + infty or -infty respectevly
                  Intersection=x
@@ -831,13 +838,23 @@ def connected_components(list_of_boxes):  #Returns the connected components of l
   return connected_components
 
 def distance(B1,B2):
-  norm=ft.arb(0)
-  for i in range(len(B1)):
+  if len(B1)==0 or len(B2)==0:
+    return []
+  elif type(B1[0])==type(ft.arb()):
+    norm=ft.arb(0)
+    for i in range(len(B1)):
       norm += power_interval(B1[i]-B2[i],2)
-  if norm.lower()>=0:
-    return ftconstructor(math.sqrt(float(norm.lower())),math.sqrt(float(norm.upper())))
-  else :
-   return ftconstructor(0,math.sqrt(float(norm.upper())))   
+    if norm.lower()>=0:
+        return ftconstructor(math.sqrt(float(norm.lower())),math.sqrt(float(norm.upper())))
+    else :
+        return ftconstructor(0,math.sqrt(float(norm.upper()))) 
+  elif  type(B1[0])==type([]): 
+      B1_ft=[ftconstructor(Bi[0],Bi[1]) for Bi in B1]
+      B2_ft=[ftconstructor(Bi[0],Bi[1]) for Bi in B2]
+      dis= distance(B1_ft,B2_ft)
+      return [float(dis.lower()),float(dis.upper())] 
+        
+    
 
                                              
     
@@ -857,9 +874,15 @@ def B_Ball_calculator(B):   # returns B_Ball
 
 def box_union(B1,B2):
     the_union=[]
-    for i in range(len(B1)) :
+    if type(B1[0])==type(ft.arb(1)):
+      for i in range(len(B1)) :
             the_union.append(B1[i].union(B2[i]))
-    return the_union
+      return the_union
+    elif  type(B1[0])==type([]): 
+      B1_ft=[ftconstructor(Bi[0],Bi[1]) for Bi in B1]
+      B2_ft=[ftconstructor(Bi[0],Bi[1]) for Bi in B2]
+      uni= box_union(B1_ft,B2_ft)
+      return [[float(Bi.lower()),float(Bi.upper())] for Bi in uni]
 
 def checking_smoothness(P,B,jac,wth=0.1):
      M=[coefficient_matrix_list(Pi) for Pi in P]

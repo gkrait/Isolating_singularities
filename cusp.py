@@ -179,6 +179,7 @@ def evaluation_exp(expr,B,X):
     f.write(" return eval(f) \n")
     f.close() 
     #from  evaluation_file import  eval_func
+    eval_func()
     answer=ft.arb(eval_func())
 
     return [float(answer.lower()),float(answer.upper())]
@@ -204,6 +205,7 @@ def Cauchy_form_poly(P,X):
 def Ball_cusp_gen(equations,B_Ball,X):
     n=len(X)
     DP=Cauchy_form_poly(equations,X)
+    
     t=sp.Symbol("t")
     coeff_t2= [ DPi.coeff(t**2)  for DPi in DP]
     eval_coefft2=[]
@@ -213,11 +215,11 @@ def Ball_cusp_gen(equations,B_Ball,X):
     for i  in range(len(DP)):
         coeff_t2=DP[i].coeff(t**2)
         ev=evaluation_exp(str(coeff_t2),B_Ball,X_Ball)
-
         eval_coefft2.append(ev)
         DP[i] -= coeff_t2 *t**2
+
         ci=sp.Symbol("c"+str(i+1))
-        DP[i]=sp.simplify(DP[i])+0.5*ci *t**2
+        DP[i]=sp.simplify(DP[i])+0.5*ci *t**2  
 
     V=""" Constants \n """
     for i in range(len(DP)):
@@ -247,30 +249,24 @@ def Ball_cusp_gen(equations,B_Ball,X):
     f.close()   
 
 
-def cusp_Ball_solver(P,B,X):
-    Ball_cusp_gen(P,B,X)
-    os.system("ibexsolve   --eps-max=0.1 -s  eq.txt  > output.txt")
-
-    g=open('output.txt','r')
-    result=g.readlines()
-    T=computing_boxes(result)
-
-    return T
-
-def computing_boxes(content):
- i=0
- Answer=[]
- for fi in content:
+def computing_boxes():
+  if "infeasible" in open("output.txt","r").read():
+    return "Empty"
+  content=open("output.txt","r").readlines()
+  cer=[]; uncer=[]
+  i=0
+  Answer=[]
+  for fi in content:
     try:
-     a=fi.index('(')
-     b=fi.index(')')
-     T=(fi[a:b+1]).replace('(','[')
-     T=T.replace(')',']')
-     T=T.split(";")
-
-     E=[]
-     i=0
-     for Ti in T:
+      a=fi.index('(')
+      b=fi.index(')')
+      T=(fi[a:b+1]).replace('(','[')
+      T=(fi[a:b+1]).replace('(','[')
+      T=T.replace(')',']')
+      T=T.split(";")
+      E=[]
+      i=0
+      for Ti in T:
         Ti= Ti.replace('[',"")
         Ti= Ti.replace(']',"")
         Ti=Ti.replace('<','')
@@ -281,10 +277,22 @@ def computing_boxes(content):
         E.append([])
         E[i]=[a,b]
         i+=1
-     Answer.append(E)
+      if "solution n" in fi or "boundary n" in fi:
+        cer.append(E)
+      elif "unknown n" in fi:
+        uncer.append(E)
     except ValueError:
-        pass 
- return Answer    
+          pass 
+  return [cer,uncer] 
+
+def cusp_Ball_solver(P,B,X):
+    Ball_cusp_gen(P,B,X) #check the evaluation_exp function
+    
+    os.system("ibexsolve   --eps-max=0.1 -s  eq.txt  > output.txt")
+    return computing_boxes()
+
+    return T
+
 P1="x1 -(cos(x3)*(3+sin(x3)^4))"
 P2="x2- (sin(x3)^2*(3+sin(8*x3)))"
 P=[P1,P2]

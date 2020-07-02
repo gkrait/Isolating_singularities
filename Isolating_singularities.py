@@ -147,7 +147,6 @@ def ibex_output(P,B,X):
     os.system("ibexsolve   --eps-max=0.1 -s  eq.txt  > output.txt")
     g=open('output.txt','r')
     result=g.readlines()
-
     T=computing_boxes(result)
 
     return T    
@@ -180,8 +179,6 @@ def estimating_t(components,upper_bound=19000.8):  #it works only if len(compone
   t=d.ftconstructor(t1,t2)
   t=0.25*d.power_interval(t,2) 
   return [float(t.lower()),float(t.upper())] 
-
-
 def boxes_compare(box1,box2):
     flage=0
     for i in range(len(box1)-1,-1,-1):
@@ -614,29 +611,73 @@ def Ball_given_2nboxes(system,X, B1,B2, monotonicity_B1=1,monotonicity_B2=1):
   if d.boxes_intersection(B1_ft, B2_ft) ==[]:
     pass
   return sol  
-def enclosing_singularities(system,boxes,B,X,eps=0.1):
+def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ball  On the case where tow monotonic boxes intersect
+  n=len(B);
   P=[Pi.replace("\n","") for Pi in  open(system,"r").readlines()]
   certified_boxes, uncertified_boxes= boxes
   classes= boxes_classifier(system,boxes,X,special_function=[])
-  #Solving Ball for B1 and B2 in R^n such that C is monotonic in B1 and B2
-  
-  T=intersect_in_2D(classes[0],classes[0])
   cer_Solutions=[]
   uncer_Solutions=[]
-  for Ti in T:
-    sol=Ball_given_2nboxes(system,X, Ti[0],Ti[1])
+  #############################################################################
+  #Solving Ball for B1 and B2 in R^n such that C is monotonic in B1 and B2
+  #######################################################################
+  monotonic_pairs=intersect_in_2D(classes[0],classes[0])
+  for B1B2 in monotonic_pairs:
+    sol=Ball_given_2nboxes(system,X, B1B2[0],B1B2[1])
     if sol != "Empty":
       cer_Solutions += sol[0]
-      uncer_Solutions += sol[1]  
-  ploting_boxes(certified_boxes,[],nodes=cer_Solutions)
+      uncer_Solutions += sol[1]     
+  ########################################################################################################
+  #Solving Ball for B R^n such that C is monotonic and no other box has the same plane projection with B##
+  ########################################################################################################
+  non_monotonic_pairs=intersect_in_2D(classes[1],classes[0]+classes[1]+classes[2])
+  for pair in non_monotonic_pairs:
+    if  d.boxes_intersection(pair[0],pair[1]) != [] :
+      pprint(sp.Matrix(cer_Solutions));input('hi')
+      uni=d.box_union(pair[0],pair[1])
+      max_q1q2=d.distance(uni[2:],uni[2:])
+      max_q1q2=d.ftconstructor(max_q1q2[0],max_q1q2[1])
+      t=d.power_interval(max_q1q2,2)/4
+      t=[float(t.lower()),float(t.upper())]
+      B_Ball=uni +[[-1.01,1.01]]*(n-2)+[t]
+      sol=cusp_Ball_solver(P,B_Ball,X)
+      
+      cer_Solutions += sol[0]
+      uncer_Solutions += sol[1]
+
+    else:
+      #if the boxes  pair[0], pair[1] do not intersect, we need to compute 3 Ball systems:
+      #1) finding cusps or small loops in pair[0]
+      pprint(sp.Matrix(pair));input()
+      max_q1q2=d.distance(pair[0][2:],pair[0][2:])
+      max_q1q2=d.ftconstructor(max_q1q2[0],max_q1q2[1])
+      t1=d.power_interval(max_q1q2,2)/4
+      t1=[float(t1.lower()),float(t1.upper())]
+      B_Ball=pair[0] +[[-1.01,1.01]]*(n-2)+[t1]
+      sol=cusp_Ball_solver(P,B_Ball,X)
+      cer_Solutions += sol[0]
+      uncer_Solutions += sol[1]
+
+      #2) finding cusps or small loops in pair[1] if C is not monotonic in pair[1]
+      if pair[1] in classes[1]:
+        max_q1q2=d.distance(pair[1][2:],pair[1][2:])
+        max_q1q2=d.ftconstructor(max_q1q2[0],max_q1q2[1])
+        t2=d.power_interval(max_q1q2,2)/4
+        t2=[float(t2.lower()),float(t2.upper())]
+        B_Ball=pair[1] +[[-1.01,1.01]]*(n-2)+[t2]
+        sol=cusp_Ball_solver(P,B_Ball,X)
+        cer_Solutions += sol[0]
+        uncer_Solutions += sol[1]
+      #3) finding A_{2k+1} singularities whose a branch in pair[0] and the other in pair[1]
+      sol=Ball_given_2nboxes(system,X, B1B2[0],B1B2[1])
+      if sol != "Empty":
+         cer_Solutions += sol[0]
+         uncer_Solutions += sol[1] 
+  
+  print(len(uncer_Solutions))       
+  ploting_boxes(boxes[0],boxes[1],nodes=cer_Solutions,cusps=uncer_Solutions)
   input()
-  #computing cusps:#####################
-  cusps=[]
-  for potantioal_cusp in classes[1]:
-    cusp=cusp_Ball_solver(P,potantioal_cusp+[[-1.01,1.01]]*(len(P)-1)+[[-0.11,0.11]],X)
-    cusps +=cusp
-  nodes=solving_fornodes(system,boxes,B,X,eps) 
-  return [nodes, cusps]  
+ 
 def assum_alph3_checker(solutions):
 	comparing_list=[[]]*len(solutions)
 	for i in range(len(solutions)-1):
@@ -662,7 +703,7 @@ def checking_assumptions(curve_data): #the input of this function is the output 
 System="system.txt" 
 Box=[[-1.03,4.03],[-1.03,5.03],[-1,1]]
 X=[sp.Symbol("x"+str(i)) for i in range(1,4)]
-boxes =enclosing_curve(System,Box,X,eps=0.05)
+boxes =enclosing_curve(System,Box,X,eps=0.1)
 
 
 nodes, nodes_or_cusps=enclosing_singularities(System,boxes,Box,X)
