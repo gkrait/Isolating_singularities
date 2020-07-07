@@ -11,7 +11,42 @@ from cusp import cusp_Ball_solver, evaluation_exp
 import matplotlib.patches as mpatches
 
 
-
+def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,nodes=[], cusps=[],uncer_Solutions=[],color="g"):
+   fig, ax = plt.subplots()
+   plt.grid(True)
+   ax.set_xlim(B[0][0], B[0][1])
+   ax.set_ylim(B[1][0], B[1][1])
+   ax.set_xlabel('x'+str(var[0]+1))
+   ax.set_ylabel('x'+str(var[1]+1))
+   ax.set_title('The plane projection for x'+str(var[0])+" and x" +str(var[1]) )
+   c=0
+   green_patch = mpatches.Patch(color='green', label='smooth part')
+   red_patch = mpatches.Patch(color='red', label='unknown part')
+   node_patch = mpatches.Patch(color='black', label='Certified nodes',fill=None)
+   cusp_patch = mpatches.Patch(color='blue', label='cusps or small nodes',fill=None)
+   plt.legend(handles=[green_patch,red_patch,node_patch,cusp_patch])
+   for box in boxes:
+     rectangle= plt.Rectangle((box[var[0]][0],box[var[1]][0]) , \
+      a*(box[var[0]][1]-box[var[0]][0]),a*(box[var[1]][1]-box[var[1]][0]), fc=color)
+     plt.gca().add_patch(rectangle)
+   for box in uncer_boxes:
+      rectangle= plt.Rectangle((box[var[0]][0],box[var[1]][0]) , \
+      a*(box[var[0]][1]-box[var[0]][0]),a*(box[var[1]][1]-box[var[1]][0]), fc='r')
+      plt.gca().add_patch(rectangle)
+   for box in nodes:
+     rectangle= plt.Rectangle((box[0][0]-0.05,box[1][0]-0.05) ,\
+      (0.09),(0.09), fc='y',fill=None)
+     plt.gca().add_patch(rectangle) 
+   for box in cusps:
+     rectangle= plt.Rectangle((box[0][0]-0.05,box[1][0]-0.05) ,\
+      (0.09),(0.09),color="blue", fc='y',fill=None)
+     plt.gca().add_patch(rectangle)
+   for box in uncer_Solutions:
+     rectangle= plt.Rectangle((box[0][0]-0.005,box[1][0]-0.005) , \
+      (box[0][1]-box[0][0]+0.03),(box[1][1]-box[1][0]+0.03),color="red", fc='r',fill=None)
+     plt.gca().add_patch(rectangle)   
+   
+   plt.show()
 def Ball_node_gen(equations,B_Ball,X):
     P=open(equations,"r").readlines()
     P=[Pi.replace('\n','') for Pi in P]
@@ -72,16 +107,6 @@ def Ball_solver(equations,B_Ball,X):     #the width condition needs to be added 
 			  L += children
 		
 	return [certified_boxes,uncertified_boxes]		  
-def boxes_intersection(B1,B2):
-  inters=[]
-  for i in range(len(B1)):
-    try:
-      inters.append(B1[i].intersection(B2[i]))
-
-    except:
-      inters=[]
-      break  
-  return inters
 def SDP_str(P,X):
     n=len(X)
     P_pluse=P[:]
@@ -165,20 +190,153 @@ def estimating_t1(components,upper_bound=200000):  #it works only if len(compone
   t=0.25*d.power_interval(t,2)     
 
   return [float(t.lower()),float(t.upper())]     
-def estimating_t(components,upper_bound=19000.8):  #it works only if len(components)
+def estimating_t(components,upper_bound=19000.8):  #it works only if len(components)==2
   t1=upper_bound
   t2=0
   for box1 in components[0]:
     for box2 in components[1]:
-        a=d.distance(box1[2:],box2[2:]).lower()
-        b=d.distance(box1[2:],box2[2:]).upper()
-        if t1 > a:
-          t1=a
-        if t2<b:
-           t2=b  
+
+        a=d.distance(box1[2:],box2[2:])
+
+        if t1 > a[0]:
+          t1=a[0]
+        if t2<a[1]:
+           t2=a[1]  
   t=d.ftconstructor(t1,t2)
   t=0.25*d.power_interval(t,2) 
   return [float(t.lower()),float(t.upper())] 
+L=[[[[-3.252105114962638, -3.214803395871669],
+   [0.131393353810193, 0.2175290093986976],
+   [2.964733547919437, 2.987205074750952],
+   [-2.810407238505762, -2.789957891372116]],
+  [[-3.254779050247681, -3.229689432155046],
+   [0.06947623795358918, 0.1313933538101931],
+   [2.982173241696814, 2.997708322719464],
+   [-2.80382947504811, -2.790033892390898]],
+  [[-3.254779050247681, -3.229689432155046],
+   [0.06947623795358918, 0.1313933538101931],
+   [2.982173241696814, 2.997708322719464],
+   [-2.80382947504811, -2.790033892390898]],
+  [[-3.254779050247681, -3.229689432155046],
+   [0.06947623795358918, 0.1313933538101931],
+   [2.982173241696814, 2.997708322719464],
+   [-2.80382947504811, -2.790033892390898]],
+  [[-3.265268894581364, -3.232090271898932],
+   [0.0, 0.07883601228611584],
+   [2.991459222037586, 3.01133613476595],
+   [-2.803169068216645, -2.785116109376248]],
+  [[-3.266421102712117, -3.243216401777491],
+   [-0.05812077360550444, 0.0],
+   [3.0070414264971, 3.021220934666216],
+   [-2.797047284094461, -2.784425057971411]],
+  [[-3.266421102712117, -3.243216401777491],
+   [-0.05812077360550444, 0.0],
+   [3.0070414264971, 3.021220934666216],
+   [-2.797047284094461, -2.784425057971411]],
+  [[-3.266421102712117, -3.243216401777491],
+   [-0.05812077360550444, 0.0],
+   [3.0070414264971, 3.021220934666216],
+   [-2.797047284094461, -2.784425057971411]],
+  [[-3.265268894581364, -3.232090271898932],
+   [0.0, 0.07883601228611584],
+   [2.991459222037586, 3.01133613476595],
+   [-2.803169068216645, -2.785116109376248]],
+  [[-3.265268894581364, -3.232090271898932],
+   [0.0, 0.07883601228611584],
+   [2.991459222037586, 3.01133613476595],
+   [-2.803169068216645, -2.785116109376248]],
+  [[-3.274904474419963, -3.243826949710876],
+   [-0.1250430567051201, -0.050017222682048],
+   [3.015759821178205, 3.034147838580619],
+   [-2.79609336513363, -2.779361877066022]],
+  [[-3.274904474419963, -3.243826949710876],
+   [-0.1250430567051201, -0.050017222682048],
+   [3.015759821178205, 3.034147838580619],
+   [-2.79609336513363, -2.779361877066022]],
+  [[-3.274904474419963, -3.243826949710876],
+   [-0.1250430567051201, -0.050017222682048],
+   [3.015759821178205, 3.034147838580619],
+   [-2.79609336513363, -2.779361877066022]],
+  [[-3.273669594511107, -3.25307915102902],
+   [-0.1774504794700618, -0.12504305670512],
+   [3.030423622932896, 3.042857587935265],
+   [-2.789734965344174, -2.778666104322518]],
+  [[-3.287661010988908, -3.248418106091881],
+   [-0.2934852287708208, -0.2016748773282401],
+   [3.043134378763788, 3.065300562939716],
+   [-2.78902365091973, -2.768310291121823]],
+  [[-3.278065660915879, -3.253491208057567],
+   [-0.2273510121911273, -0.1659662388995229],
+   [3.037662141573242, 3.052216096974402],
+   [-2.788176923403289, -2.775062958984005]]],
+ [[[-3.283203891159618, -3.245090212221073],
+   [0.1183343150036575, 0.2076668480494243],
+   [-3.049757560307822, -3.027882000275628],
+   [2.77345838323754, 2.793764097649187]],
+  [[-3.283203891159618, -3.245090212221073],
+   [0.1183343150036575, 0.2076668480494243],
+   [-3.049757560307822, -3.027882000275628],
+   [2.77345838323754, 2.793764097649187]],
+  [[-3.273845734457105, -3.245362642055262],
+   [0.05635364571929414, 0.1259874887463708],
+   [-3.034104420619746, -3.017136111926047],
+   [2.779847971352041, 2.795196635411783]],
+  [[-3.278041935081966, -3.235100770754473],
+   [0.0, 0.09793998014625022],
+   [-3.030228594669157, -3.005480723597536],
+   [2.778263416945049, 2.801347832711445]],
+  [[-3.273845734457105, -3.245362642055262],
+   [0.05635364571929414, 0.1259874887463708],
+   [-3.034104420619746, -3.017136111926047],
+   [2.779847971352041, 2.795196635411783]],
+  [[-3.26005682059778, -3.239781996669679],
+   [-0.05147406477316385, 0.0],
+   [-3.010238209524136, -2.997626891650747],
+   [2.787880526323256, 2.798992533418408]],
+  [[-3.258581990297226, -3.230408499411406],
+   [-0.1141583706168373, -0.04566334824673487],
+   [-3.002417613050431, -2.985189823104108],
+   [2.788297896102082, 2.803728019596694]],
+  [[-3.26005682059778, -3.239781996669679],
+   [-0.05147406477316385, 0.0],
+   [-3.010238209524136, -2.997626891650747],
+   [2.787880526323256, 2.798992533418408]],
+  [[-3.254899409407838, -3.215995534313662],
+   [-0.2033898236193886, -0.1141583706168372],
+   [-2.990590073323677, -2.967305008699568],
+   [2.788890111796088, 2.810175026805079]],
+  [[-3.254899409407838, -3.215995534313662],
+   [-0.2033898236193886, -0.1141583706168372],
+   [-2.990590073323677, -2.967305008699568],
+   [2.788890111796088, 2.810175026805079]],
+  [[-3.254899409407838, -3.215995534313662],
+   [-0.2033898236193886, -0.1141583706168372],
+   [-2.990590073323677, -2.967305008699568],
+   [2.788890111796088, 2.810175026805079]],
+  [[-3.254899409407838, -3.215995534313662],
+   [-0.2033898236193886, -0.1141583706168372],
+   [-2.990590073323677, -2.967305008699568],
+   [2.788890111796088, 2.810175026805079]],
+  [[-3.278041935081966, -3.235100770754473],
+   [0.0, 0.09793998014625022],
+   [-3.030228594669157, -3.005480723597536],
+   [2.778263416945049, 2.801347832711445]],
+  [[-3.278041935081966, -3.235100770754473],
+   [0.0, 0.09793998014625022],
+   [-3.030228594669157, -3.005480723597536],
+   [2.778263416945049, 2.801347832711445]],
+  [[-3.26005682059778, -3.239781996669679],
+   [-0.05147406477316385, 0.0],
+   [-3.010238209524136, -2.997626891650747],
+   [2.787880526323256, 2.798992533418408]],
+  [[-3.258581990297226, -3.230408499411406],
+   [-0.1141583706168373, -0.04566334824673487],
+   [-3.002417613050431, -2.985189823104108],
+   [2.788297896102082, 2.803728019596694]]]]
+print(L[0][0])
+d=d.distance(L[0][0],L[1][0])
+print(((L[0][0][3][0]-L[1][0][3][0])**2 + (L[0][0][2][0]-L[1][0][2][0])**2 )/4);input()
+print(estimating_t(L));input()
 def boxes_compare(box1,box2):
     flage=0
     for i in range(len(box1)-1,-1,-1):
@@ -196,10 +354,8 @@ def boxes_sort(boxes):
                 sorted_boxes[i], sorted_boxes[j] =sorted_boxes[j], sorted_boxes[i]
     return sorted_boxes            
 def connected_compnants(boxes):
-
     #ftboxes=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in boxes ]
     ftboxes=boxes[:]
-
     components=[[ftboxes[0]]]
     for i in range(1,len(ftboxes)):
         boxi_isused=0
@@ -217,17 +373,22 @@ def connected_compnants(boxes):
           components.append([ftboxes[i]])
     unused=list(range(len(components)))
     components1=components[:]
+    """ploting_boxes(components1[0]+components1[1],components1[2])
+    pprint(sp.Matrix(components1[0]))
+    print()
+    pprint(sp.Matrix(components1[1]))
+    print()
+    pprint(sp.Matrix(components1[2]));input()"""
     components2=[]
-    
     while len(components1) != len(components2) :  
         for i in unused:
             for j in   [j for j in list(range(i+1,len(components))) if j in unused ]:
                 intersection_exists=False
                 is_looping=True
                 for boxi in components[i]:
-                    
                     for boxj in components[j]:
                         if d.boxes_intersection(boxi,boxj)!=[]:
+                            
                             is_looping = False
                             intersection_exists=True
                             break
@@ -236,10 +397,38 @@ def connected_compnants(boxes):
                 if intersection_exists== True:
                     components[i] += components[j]
                     unused.remove(j)
-            components2=components1[:]
-            components1=[components[k] for k in unused ]                    
 
+        components2=components1[:]
+        components1=[components[k] for k in unused ]
+                            
     return components1                        
+"""L=[[[[2.768969170694841, 2.790141486580906],
+   [0.4509990773255078, 0.5403049083011847],
+   [0.3946294779850825, 0.4151771978930115]],
+  [[2.788352181634472, 2.801554959013289],
+   [0.395548230059691, 0.4509990773255079],
+   [0.3823785117757613, 0.3957406673053885]],
+  [[2.800589379220763, 2.812210762552736],
+   [0.3501793551334301, 0.3955482300596911],
+   [0.3709711413073521, 0.3830201900500034]]],
+ [[[2.757409297766284, 2.837216901721877],
+   [0.3928295143390712, 0.4878351587216168],
+   [-0.4226296301217972, -0.3505577459195103]],
+  [[2.757409297766284, 2.837216901721877],
+   [0.3928295143390712, 0.4878351587216168],
+   [-0.4226296301217972, -0.3505577459195103]],
+  [[2.757409297766284, 2.837216901721877],
+   [0.3928295143390712, 0.4878351587216168],
+   [-0.4226296301217972, -0.3505577459195103]],
+  [[2.757409297766284, 2.837216901721877],
+   [0.3928295143390712, 0.4878351587216168],
+   [-0.4226296301217972, -0.3505577459195103]]],
+ [[[2.835573873123039, 2.853926838236699],
+   [0.4005283844599192, 0.4189257520670229],
+   [-0.3445968107328622, -0.3242775294861016]]]]
+L=L[0]+L[1]+L[2]
+print(len(connected_compnants(L)));input()"""
+
 def planner_connected_compnants(boxes): 
     ftboxes=boxes[:]
     #ftboxes=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in boxes ]
@@ -250,31 +439,29 @@ def planner_connected_compnants(boxes):
             membership=0
             for k in range(len(components[j])):   
 
-                if d.boxes_intersection(ftboxes[i][1][:2],components[j][k][1][:2]) !=[] and \
-                d.boxes_intersection(ftboxes[i][1],components[j][k][1]) ==[]:
+                if d.boxes_intersection(ftboxes[i][:2],components[j][k][:2]) !=[] and \
+                d.boxes_intersection(ftboxes[i],components[j][k]) ==[]:
                     components[j].append(ftboxes[i])
                     membership=1
                     boxi_isused=1
-                    break
-                
+                    break  
             if membership==1:
               break 
         if boxi_isused==0:
           components.append([ftboxes[i]])
+        
     unused=list(range(len(components)))
     components1=components[:]
     components2=[]
     while len(components1) != len(components2) :
-        
         for i in unused:
             for j in   [j for j in list(range(i+1,len(components))) if j in unused ]:
                 intersection_exists=False
                 is_looping=True
                 for boxi in components[i]:
-                    
                     for boxj in components[j]:
-                        if d.boxes_intersection(boxi[1],boxj[1])==[] and \
-                       d.boxes_intersection(boxi[1][:2],boxj[1][:2]) != []  :
+                        if d.boxes_intersection(boxi,boxj)==[] and \
+                       d.boxes_intersection(boxi[:2],boxj[:2]) != []  :
                             is_looping = False
                             intersection_exists=True
                             break
@@ -285,7 +472,6 @@ def planner_connected_compnants(boxes):
                     unused.remove(j)
             components2=components1[:]
             components1=[components[k] for k in unused ]                    
-
     return components1                   
 
 
@@ -298,9 +484,14 @@ def estimating_yandr(components,upper_bound=100000):
   y_list=[]
   for box1 in components[0]:
     for box2 in components[1]:
-        y_list.append([0.5*(q1+q2) for q1,q2 in zip(box1[2:],box2[2:])])
+        ft_box1= [d.ftconstructor(Bi[0],Bi[1]) for Bi in box1  ]
+        ft_box2= [d.ftconstructor(Bi[0],Bi[1]) for Bi in box2  ]
+        
+        y_list.append([0.5*(q1+q2) for q1,q2 in zip(ft_box1[2:],ft_box2[2:])])
         norm_q1q2=d.distance(box1[2:],box2[2:])
-        q1q2=[box1[i]-box2[i] for i in range(2,len(box1)) ]
+        norm_q1q2=d.ftconstructor(norm_q1q2[0],norm_q1q2[1])
+        q1q2=[ft_box1[i]-ft_box2[i] for i in range(2,len(box1)) ]
+        
         r=[ ri/norm_q1q2 for ri in q1q2 ]
         r_list.append(r)
   r=[]
@@ -334,6 +525,7 @@ def detecting_nodes(boxes,B,f,X,eps): #boxes are list of cer and uncer curve
                 if j not in used:
                     used.append(j)
                     nodes_lifting.append(ftboxes[j])
+
     components= planner_connected_compnants(nodes_lifting)
     cer_components=[]
     uncer_components=[]
@@ -346,17 +538,20 @@ def detecting_nodes(boxes,B,f,X,eps): #boxes are list of cer and uncer curve
         else: 
             uncer_components.append(boxes_component)
     return [cer_components,uncer_components]         
-def intersect_in_2D(class1,class2):
-  class1_ft=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in class1 ]
-  class2_ft=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in class2 ]
+def intersect_in_2D(class1,class2,monotonicity=1):
   pl_intesected_pairs=[]
-  for i in range(len(class1_ft)):
-    for j in range(len(class2_ft)):
-      if boxes_intersection(class1_ft[i][:2],class2_ft[j][:2]) !=[] and class1[i] !=class2[j]:
-        if [class2[j],class1[i]] not in pl_intesected_pairs:
-          pl_intesected_pairs.append([class1[i],class2[j]])
-       
-
+  if monotonicity==1:
+    for i in range(len(class1)):
+      for j in range(len(class2)):
+        if d.boxes_intersection(class1[i][:2],class2[j][:2]) !=[] and   d.boxes_intersection(class1[i],class2[j]) ==[] :
+          if [class2[j],class1[i]] not in pl_intesected_pairs:
+            pl_intesected_pairs.append([class1[i],class2[j]])
+  elif  monotonicity==0:       
+       for i in range(len(class1)):
+         for j in range(len(class2)):
+           if d.boxes_intersection(class1[i][:2],class2[j][:2]) !=[]:
+             if [class2[j],class1[i]] not in pl_intesected_pairs:
+                 pl_intesected_pairs.append([class1[i],class2[j]])
   return pl_intesected_pairs     
 def solving_fornodes(equations,boxes,B,X,eps=0.1):
     plane_components=detecting_nodes(boxes,B,equations,X,eps)#[0]
@@ -401,8 +596,6 @@ def system_generator(f,B,X):
     f.close()
 
     return f
-#f.write("x1 in " + str(B[0]) +" ; \n")
-	#f.write("x2 in " + str(B[1])+" ; \n")
 def solving_with_ibex(eps=0.1):
 	uncer_content=[]
 	cer_content=[]
@@ -454,40 +647,6 @@ def computing_boxes():
           pass 
   return [cer,uncer]        
 
-def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,nodes=[], cusps=[],color="g"):
-   fig, ax = plt.subplots()
-   plt.grid(True)
-   ax.set_xlim(B[0][0], B[0][1])
-   ax.set_ylim(B[1][0], B[1][1])
-   ax.set_xlabel('x'+str(var[0]+1))
-   ax.set_ylabel('x'+str(var[1]+1))
-   ax.set_title('The plane projection for x'+str(var[0])+" and x" +str(var[1]) )
-   c=0
-   green_patch = mpatches.Patch(color='green', label='smooth part')
-   red_patch = mpatches.Patch(color='red', label='unknown part')
-   node_patch = mpatches.Patch(color='black', label='Certified nodes',fill=None)
-   cusp_patch = mpatches.Patch(color='blue', label='cusps or small nodes',fill=None)
-   plt.legend(handles=[green_patch,red_patch,node_patch,cusp_patch])
-   for box in boxes:
-     rectangle= plt.Rectangle((box[var[0]][0],box[var[1]][0]) , \
-    	a*(box[var[0]][1]-box[var[0]][0]),a*(box[var[1]][1]-box[var[1]][0]), fc=color)
-     plt.gca().add_patch(rectangle)
-   for box in uncer_boxes:
-    	rectangle= plt.Rectangle((box[var[0]][0],box[var[1]][0]) , \
-    	a*(box[var[0]][1]-box[var[0]][0]),a*(box[var[1]][1]-box[var[1]][0]), fc='r')
-    	plt.gca().add_patch(rectangle)
-   for box in nodes:
-     rectangle= plt.Rectangle((box[0][0]-0.005,box[1][0]-0.005) , \
-    	(box[0][1]-box[0][0]+0.03),(box[1][1]-box[1][0]+0.03), fc='y',fill=None)
-     plt.gca().add_patch(rectangle) 
-   for box in cusps:
-     x_center=0.5*(box[0][0]+box[0][1])
-     y_center=0.5*(box[1][0]+box[1][1])
-     r=max(box[0][1]-box[0][0],box[1][1]-box[1][0])+0.1
-     rectangle= plt.Rectangle((box[0][0]-0.15,box[1][0]-0.15) , \
-      (box[0][1]-box[0][0]+0.3),(box[1][1]-box[1][0]+0.3),color="blue", fc='y',fill=None)
-     plt.gca().add_patch(rectangle)
-   plt.show()
 def enclosing_curve(system,B,X,eps=0.1): 
   L=[B]
   certified_boxes=[]
@@ -608,9 +767,16 @@ def Ball_given_2nboxes(system,X, B1,B2, monotonicity_B1=1,monotonicity_B2=1):
     Ball_node_gen(system,B_Ball,X)
     os.system("ibexsolve   --eps-max=0.1 -s  eq.txt  > output.txt")
     sol=computing_boxes()
-  if d.boxes_intersection(B1_ft, B2_ft) ==[]:
-    pass
+  #if d.boxes_intersection(B1_ft, B2_ft) ==[]:
+  #  pass
   return sol  
+
+"""def combining_boxes(components):
+  for i in range(len(components)-1):
+    for j in range(i+1,len(components)):
+      if d.boxes_intersection(components[i],components[j])==[]:"""
+
+
 def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ball  On the case where tow monotonic boxes intersect
   n=len(B);
   P=[Pi.replace("\n","") for Pi in  open(system,"r").readlines()]
@@ -622,18 +788,43 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
   #Solving Ball for B1 and B2 in R^n such that C is monotonic in B1 and B2
   #######################################################################
   monotonic_pairs=intersect_in_2D(classes[0],classes[0])
-  for B1B2 in monotonic_pairs:
-    sol=Ball_given_2nboxes(system,X, B1B2[0],B1B2[1])
-    if sol != "Empty":
-      cer_Solutions += sol[0]
-      uncer_Solutions += sol[1]     
+  monotonic_componants=[ Bi[0] for Bi in  monotonic_pairs ] +[ Bi[1] for Bi in  monotonic_pairs ]
+  plane_components= planner_connected_compnants(monotonic_componants)
+  H=[]
+  for plane_component in plane_components:  
+        #pprint((plane_component))
+        x1=float(min([ai[0][0] for ai in plane_component]))
+        x2=float(max([ai[0][1] for ai in plane_component]))
+        y1=float(min([ai[1][0] for ai in plane_component]))
+        y2=float(max([ai[1][1] for ai in plane_component]))
+        #print([ai[1][0] for ai in plane_component]);input()
+        components=connected_compnants(plane_component)
+        #reminder to me: You should deal with case len(components)>2 
+        t=estimating_t(components)
+        r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr(components)]
+        
+        pprint(components)
+        #t=[float(t[0]),float(t[1])]
+        B_Ball=[[x1,x2],[y1,y2]]+r +[t]
+        print(B_Ball)
+        #print(B_Ball)
+        Ball_generating_system(P,B_Ball,X)
+        H.append(B_Ball)
+        os.system("ibexsolve   --eps-max="+ str(eps)+" -s  eq.txt  > output.txt")
+        Solutions=computing_boxes()
+        print(Solutions)
+        input()
+        if Solutions != "Empty":
+          cer_Solutions += Solutions[0]
+          uncer_Solutions += Solutions[1] 
+  ploting_boxes(boxes[0],H);input()         
+    #There still the case B1B2[0],B1B2[1] are not disjoint 
   ########################################################################################################
   #Solving Ball for B R^n such that C is monotonic and no other box has the same plane projection with B##
   ########################################################################################################
-  non_monotonic_pairs=intersect_in_2D(classes[1],classes[0]+classes[1]+classes[2])
+  non_monotonic_pairs=intersect_in_2D(classes[1],classes[0]+classes[1]+classes[2],monotonicity=0)
   for pair in non_monotonic_pairs:
     if  d.boxes_intersection(pair[0],pair[1]) != [] :
-      pprint(sp.Matrix(cer_Solutions));input('hi')
       uni=d.box_union(pair[0],pair[1])
       max_q1q2=d.distance(uni[2:],uni[2:])
       max_q1q2=d.ftconstructor(max_q1q2[0],max_q1q2[1])
@@ -641,14 +832,11 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
       t=[float(t.lower()),float(t.upper())]
       B_Ball=uni +[[-1.01,1.01]]*(n-2)+[t]
       sol=cusp_Ball_solver(P,B_Ball,X)
-      
       cer_Solutions += sol[0]
       uncer_Solutions += sol[1]
-
     else:
       #if the boxes  pair[0], pair[1] do not intersect, we need to compute 3 Ball systems:
       #1) finding cusps or small loops in pair[0]
-      pprint(sp.Matrix(pair));input()
       max_q1q2=d.distance(pair[0][2:],pair[0][2:])
       max_q1q2=d.ftconstructor(max_q1q2[0],max_q1q2[1])
       t1=d.power_interval(max_q1q2,2)/4
@@ -657,7 +845,6 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
       sol=cusp_Ball_solver(P,B_Ball,X)
       cer_Solutions += sol[0]
       uncer_Solutions += sol[1]
-
       #2) finding cusps or small loops in pair[1] if C is not monotonic in pair[1]
       if pair[1] in classes[1]:
         max_q1q2=d.distance(pair[1][2:],pair[1][2:])
@@ -673,11 +860,17 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
       if sol != "Empty":
          cer_Solutions += sol[0]
          uncer_Solutions += sol[1] 
-  
-  print(len(uncer_Solutions))       
-  ploting_boxes(boxes[0],boxes[1],nodes=cer_Solutions,cusps=uncer_Solutions)
-  input()
- 
+  #########################################################################################
+  #Determining whether a singular box is node or a cups_or_smallnode########################
+  ##########################################################################################  
+  nodes=[]
+  cups_or_smallnodes=[]
+  for solution in cer_Solutions :
+    if 0 >= solution[2*n-2][0] and 0 <= solution[2*n-2][1]:
+      cups_or_smallnodes.append(solution)
+    else:
+      nodes.append(solution)
+  return [nodes,cups_or_smallnodes, uncer_Solutions ]     
 def assum_alph3_checker(solutions):
 	comparing_list=[[]]*len(solutions)
 	for i in range(len(solutions)-1):
@@ -699,17 +892,16 @@ def checking_assumptions(curve_data): #the input of this function is the output 
 		return 1
 	else:
 		return 0
-
-System="system.txt" 
-Box=[[-1.03,4.03],[-1.03,5.03],[-1,1]]
-X=[sp.Symbol("x"+str(i)) for i in range(1,4)]
+System="system2.txt" 
+Box=[[-5, 15], [-15, 15],[-3.14,3.14],[-3.14,3.14]]
+#Box=[[-2.01,3.03],[-1.03,5.03],[-2.9,2.93]]
+X=[sp.Symbol("x"+str(i)) for i in range(1,5)]
 boxes =enclosing_curve(System,Box,X,eps=0.1)
-
-
-nodes, nodes_or_cusps=enclosing_singularities(System,boxes,Box,X)
+nodes, cups_or_smallnodes,uncer_Solutions=enclosing_singularities(System,boxes,Box,X)
+pprint(cups_or_smallnodes)
+pprint(uncer_Solutions )
 #plotting the singularities
-
-ploting_boxes(boxes[0],[],B=[[-5,5],[-5,5]])
+ploting_boxes(boxes[0],boxes[1] , nodes = nodes, cusps= cups_or_smallnodes,uncer_Solutions=uncer_Solutions )
 ##################################
 #Declaring parameters #######
 ##################################
@@ -722,136 +914,4 @@ X=[sp.Symbol("x"+str(i)) for i in range(1,5)]
 ##################################
 boxes =enclosing_curve(System,Box,X)
 
-
-nodes, nodes_or_cusps=enclosing_singularities(System,boxes,Box,X)
-
-#plotting the singularities
-ploting_boxes(boxes[0],boxes[1],B=[[-5,15],[-15,15]]\
-                  ,nodes=nodes, cusps=nodes_or_cusps)
 """
-
-
-
-"""ss	
-X=[]
-for i in range(4):
-	X.append(sp.Symbol("x"+str(i+1)))
-system ="equations2.txt"
-B=[[-15,15],[-15,15],[-3.14,3.14],[-3.14,3.14]]
-boxes=Ball_solver(system,B,X,eps=0.03)
-print(checking_assumptions(boxes))
-print(len(cla[0]),len(cla[1]),len(cla[2]))
-print(cla[1])
-ploting_boxes(cla[0],cla[1])"""
-"""
-equations="equations1.txt" 
-
-B=[[-5,15],[-15,15],[-3.14,3.14],[-3.14,3.14]]
-
-T=branche_sing(equations,B,X)
-
-pickle_out=open("boxes_first_branch_silhouette","wb")
-pickle.dump(T,pickle_out)
-pickle_out.close()
-input('hi')
-components= detecting_nodes(boxes,B,equations,X)
-curve1=[[[[float( boxij[0].lower()),float( boxij[0].upper())] for boxij in boxi ] for boxi in componant] for componant in  components[0]]
-curve2=[[[[float( boxij[0].lower()),float( boxij[0].upper())] for boxij in boxi ] for boxi in componant] for componant in  components[1]]
-
-
-curve1=[[[[float( boxij[0].lower()),float( boxij[0].upper())] for boxij in boxi ] for boxi in componant] for componant in  components[0]]
-curve2=[[[[float( boxij[0].lower()),float( boxij[0].upper())] for boxij in boxi ] for boxi in componant] for componant in  components[1]]
-
-T1=[]
-
-print(len(curve1),len(curve2))
-for box in curve1[:1]:
-	T1 =T1+ box
-
-T2=[]
-
-for box in curve2[:]:
-	T2 =T2+ box
-#ploting_boxes(T1,T2,var=[2,3])"""
-
-
-
-"""
-pickle_in=open("boxes_first_branch_silhouette","rb")
-boxes=pickle.load(pickle_in)[0]
-pickle_in.close()
-
-
-(eval_file_gen(f,boxes))
-"""
-
-"""T=solver(f,B)
-pickle_out=open("boxes_first_branch_silhouette","wb")
-pickle.dump(T,pickle_out)
-pickle_out.close()
-
-ploting_boxes(T[0],T[1])"""
-
-"""
-for i in range(-20,20):
-	for j in range(-20,20):
-		f=system_generator(i,j)
-		T=solving_with_ibex(f)
-		content=T[0]
-		uncer_content=T[1]
-		if len(content) != 0:
-			Answer=computing_boxes(content)
-			projection += [Ti for Ti in Answer ]
-		if len(uncer_content) !=0:
-		   Answer=computing_boxes(uncer_content)
-		   uncer_projection += Answer
-
-
-
-
-
-
-
-ploting_boxes(projection,uncer_projection)
-
-
-"""
-
-
-
-
-#os.system("cd Documents")
-
-"""
-f= open("eq.txt","w+")
-f.write("Variables \n")
-f.write("x1 in [" + str(4)+ "," + str(5) +" ]; \n")
-f.write("x2 in [" + str(11.9)+ "," + str(12.2) +" ]; \n")
-L=q1 in [0.5,1.2];
-q2 in [1.2,2.4];
-Constraints
-(x1 - 8*cos(q1))^2 + (x2 - 8*sin(q1) )^2 - 25=0;
-(x1 - 9 - 5* cos(q2) )^2 + (x2 - 5* sin(q2))^2 - 64 = 0;
-(16*(x1 - 8*cos(q1))*sin(q1) - 16*(x2 - 8*sin(q1))*cos(q1))*(-10*(x2 - 5*sin(q2))*cos(q2) + 10*(x1 - 5*cos(q2) - 9)*sin(q2))=0;
-end  
-f.write(L)
-f.close()
-content=solving_with_ibex(f)[0]
-T=computing_boxes(content)
-
-
-fig, ax = plt.subplots()
-plt.grid(True)
-
-ax.set_xlim(4,5)
-ax.set_ylim(11.2,12.4)
-#plt.xticks(np.arange(-6,14, 2.0))
-#plt.yticks(np.arange(-13,13,2))
-ax.set_xlabel('x1')
-ax.set_ylabel('x2')
-
-for box in T:
-     rectangle= plt.Rectangle((box[0][0],box[1][0]) , \
-    	box[0][1]-box[0][0],box[1][1]-box[1][0], fc='g',label='branch 1')
-     plt.gca().add_patch(rectangle)
-plt.show()     """
