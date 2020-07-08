@@ -247,8 +247,6 @@ def Ball_cusp_gen(equations,B_Ball,X):
     f.write(V) 
     f.write("end")
     f.close()   
-
-
 def computing_boxes():
   if "infeasible" in open("output.txt","r").read():
     return "Empty"
@@ -284,10 +282,8 @@ def computing_boxes():
     except ValueError:
           pass 
   return [cer,uncer] 
-
 def cusp_Ball_solver(P,B,X):
     Ball_cusp_gen(P,B,X) #check the evaluation_exp function
-    
     os.system("ibexsolve   --eps-max=0.1 -s  eq.txt  > output.txt")
     return computing_boxes()
 

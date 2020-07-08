@@ -205,138 +205,7 @@ def estimating_t(components,upper_bound=19000.8):  #it works only if len(compone
   t=d.ftconstructor(t1,t2)
   t=0.25*d.power_interval(t,2) 
   return [float(t.lower()),float(t.upper())] 
-L=[[[[-3.252105114962638, -3.214803395871669],
-   [0.131393353810193, 0.2175290093986976],
-   [2.964733547919437, 2.987205074750952],
-   [-2.810407238505762, -2.789957891372116]],
-  [[-3.254779050247681, -3.229689432155046],
-   [0.06947623795358918, 0.1313933538101931],
-   [2.982173241696814, 2.997708322719464],
-   [-2.80382947504811, -2.790033892390898]],
-  [[-3.254779050247681, -3.229689432155046],
-   [0.06947623795358918, 0.1313933538101931],
-   [2.982173241696814, 2.997708322719464],
-   [-2.80382947504811, -2.790033892390898]],
-  [[-3.254779050247681, -3.229689432155046],
-   [0.06947623795358918, 0.1313933538101931],
-   [2.982173241696814, 2.997708322719464],
-   [-2.80382947504811, -2.790033892390898]],
-  [[-3.265268894581364, -3.232090271898932],
-   [0.0, 0.07883601228611584],
-   [2.991459222037586, 3.01133613476595],
-   [-2.803169068216645, -2.785116109376248]],
-  [[-3.266421102712117, -3.243216401777491],
-   [-0.05812077360550444, 0.0],
-   [3.0070414264971, 3.021220934666216],
-   [-2.797047284094461, -2.784425057971411]],
-  [[-3.266421102712117, -3.243216401777491],
-   [-0.05812077360550444, 0.0],
-   [3.0070414264971, 3.021220934666216],
-   [-2.797047284094461, -2.784425057971411]],
-  [[-3.266421102712117, -3.243216401777491],
-   [-0.05812077360550444, 0.0],
-   [3.0070414264971, 3.021220934666216],
-   [-2.797047284094461, -2.784425057971411]],
-  [[-3.265268894581364, -3.232090271898932],
-   [0.0, 0.07883601228611584],
-   [2.991459222037586, 3.01133613476595],
-   [-2.803169068216645, -2.785116109376248]],
-  [[-3.265268894581364, -3.232090271898932],
-   [0.0, 0.07883601228611584],
-   [2.991459222037586, 3.01133613476595],
-   [-2.803169068216645, -2.785116109376248]],
-  [[-3.274904474419963, -3.243826949710876],
-   [-0.1250430567051201, -0.050017222682048],
-   [3.015759821178205, 3.034147838580619],
-   [-2.79609336513363, -2.779361877066022]],
-  [[-3.274904474419963, -3.243826949710876],
-   [-0.1250430567051201, -0.050017222682048],
-   [3.015759821178205, 3.034147838580619],
-   [-2.79609336513363, -2.779361877066022]],
-  [[-3.274904474419963, -3.243826949710876],
-   [-0.1250430567051201, -0.050017222682048],
-   [3.015759821178205, 3.034147838580619],
-   [-2.79609336513363, -2.779361877066022]],
-  [[-3.273669594511107, -3.25307915102902],
-   [-0.1774504794700618, -0.12504305670512],
-   [3.030423622932896, 3.042857587935265],
-   [-2.789734965344174, -2.778666104322518]],
-  [[-3.287661010988908, -3.248418106091881],
-   [-0.2934852287708208, -0.2016748773282401],
-   [3.043134378763788, 3.065300562939716],
-   [-2.78902365091973, -2.768310291121823]],
-  [[-3.278065660915879, -3.253491208057567],
-   [-0.2273510121911273, -0.1659662388995229],
-   [3.037662141573242, 3.052216096974402],
-   [-2.788176923403289, -2.775062958984005]]],
- [[[-3.283203891159618, -3.245090212221073],
-   [0.1183343150036575, 0.2076668480494243],
-   [-3.049757560307822, -3.027882000275628],
-   [2.77345838323754, 2.793764097649187]],
-  [[-3.283203891159618, -3.245090212221073],
-   [0.1183343150036575, 0.2076668480494243],
-   [-3.049757560307822, -3.027882000275628],
-   [2.77345838323754, 2.793764097649187]],
-  [[-3.273845734457105, -3.245362642055262],
-   [0.05635364571929414, 0.1259874887463708],
-   [-3.034104420619746, -3.017136111926047],
-   [2.779847971352041, 2.795196635411783]],
-  [[-3.278041935081966, -3.235100770754473],
-   [0.0, 0.09793998014625022],
-   [-3.030228594669157, -3.005480723597536],
-   [2.778263416945049, 2.801347832711445]],
-  [[-3.273845734457105, -3.245362642055262],
-   [0.05635364571929414, 0.1259874887463708],
-   [-3.034104420619746, -3.017136111926047],
-   [2.779847971352041, 2.795196635411783]],
-  [[-3.26005682059778, -3.239781996669679],
-   [-0.05147406477316385, 0.0],
-   [-3.010238209524136, -2.997626891650747],
-   [2.787880526323256, 2.798992533418408]],
-  [[-3.258581990297226, -3.230408499411406],
-   [-0.1141583706168373, -0.04566334824673487],
-   [-3.002417613050431, -2.985189823104108],
-   [2.788297896102082, 2.803728019596694]],
-  [[-3.26005682059778, -3.239781996669679],
-   [-0.05147406477316385, 0.0],
-   [-3.010238209524136, -2.997626891650747],
-   [2.787880526323256, 2.798992533418408]],
-  [[-3.254899409407838, -3.215995534313662],
-   [-0.2033898236193886, -0.1141583706168372],
-   [-2.990590073323677, -2.967305008699568],
-   [2.788890111796088, 2.810175026805079]],
-  [[-3.254899409407838, -3.215995534313662],
-   [-0.2033898236193886, -0.1141583706168372],
-   [-2.990590073323677, -2.967305008699568],
-   [2.788890111796088, 2.810175026805079]],
-  [[-3.254899409407838, -3.215995534313662],
-   [-0.2033898236193886, -0.1141583706168372],
-   [-2.990590073323677, -2.967305008699568],
-   [2.788890111796088, 2.810175026805079]],
-  [[-3.254899409407838, -3.215995534313662],
-   [-0.2033898236193886, -0.1141583706168372],
-   [-2.990590073323677, -2.967305008699568],
-   [2.788890111796088, 2.810175026805079]],
-  [[-3.278041935081966, -3.235100770754473],
-   [0.0, 0.09793998014625022],
-   [-3.030228594669157, -3.005480723597536],
-   [2.778263416945049, 2.801347832711445]],
-  [[-3.278041935081966, -3.235100770754473],
-   [0.0, 0.09793998014625022],
-   [-3.030228594669157, -3.005480723597536],
-   [2.778263416945049, 2.801347832711445]],
-  [[-3.26005682059778, -3.239781996669679],
-   [-0.05147406477316385, 0.0],
-   [-3.010238209524136, -2.997626891650747],
-   [2.787880526323256, 2.798992533418408]],
-  [[-3.258581990297226, -3.230408499411406],
-   [-0.1141583706168373, -0.04566334824673487],
-   [-3.002417613050431, -2.985189823104108],
-   [2.788297896102082, 2.803728019596694]]]]
-print(L[0][0])
-d=d.distance(L[0][0],L[1][0])
-print(((L[0][0][3][0]-L[1][0][3][0])**2 + (L[0][0][2][0]-L[1][0][2][0])**2 )/4);input()
-print(estimating_t(L));input()
+
 def boxes_compare(box1,box2):
     flage=0
     for i in range(len(box1)-1,-1,-1):
@@ -373,12 +242,6 @@ def connected_compnants(boxes):
           components.append([ftboxes[i]])
     unused=list(range(len(components)))
     components1=components[:]
-    """ploting_boxes(components1[0]+components1[1],components1[2])
-    pprint(sp.Matrix(components1[0]))
-    print()
-    pprint(sp.Matrix(components1[1]))
-    print()
-    pprint(sp.Matrix(components1[2]));input()"""
     components2=[]
     while len(components1) != len(components2) :  
         for i in unused:
@@ -402,34 +265,10 @@ def connected_compnants(boxes):
         components1=[components[k] for k in unused ]
                             
     return components1                        
-"""L=[[[[2.768969170694841, 2.790141486580906],
-   [0.4509990773255078, 0.5403049083011847],
-   [0.3946294779850825, 0.4151771978930115]],
-  [[2.788352181634472, 2.801554959013289],
-   [0.395548230059691, 0.4509990773255079],
-   [0.3823785117757613, 0.3957406673053885]],
-  [[2.800589379220763, 2.812210762552736],
-   [0.3501793551334301, 0.3955482300596911],
-   [0.3709711413073521, 0.3830201900500034]]],
- [[[2.757409297766284, 2.837216901721877],
-   [0.3928295143390712, 0.4878351587216168],
-   [-0.4226296301217972, -0.3505577459195103]],
-  [[2.757409297766284, 2.837216901721877],
-   [0.3928295143390712, 0.4878351587216168],
-   [-0.4226296301217972, -0.3505577459195103]],
-  [[2.757409297766284, 2.837216901721877],
-   [0.3928295143390712, 0.4878351587216168],
-   [-0.4226296301217972, -0.3505577459195103]],
-  [[2.757409297766284, 2.837216901721877],
-   [0.3928295143390712, 0.4878351587216168],
-   [-0.4226296301217972, -0.3505577459195103]]],
- [[[2.835573873123039, 2.853926838236699],
-   [0.4005283844599192, 0.4189257520670229],
-   [-0.3445968107328622, -0.3242775294861016]]]]
-L=L[0]+L[1]+L[2]
-print(len(connected_compnants(L)));input()"""
 
 def planner_connected_compnants(boxes): 
+    if len(boxes)==0:
+      return []
     ftboxes=boxes[:]
     #ftboxes=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in boxes ]
     components=[[ftboxes[0]] ]
@@ -646,7 +485,6 @@ def computing_boxes():
     except ValueError:
           pass 
   return [cer,uncer]        
-
 def enclosing_curve(system,B,X,eps=0.1): 
   L=[B]
   certified_boxes=[]
@@ -770,13 +608,6 @@ def Ball_given_2nboxes(system,X, B1,B2, monotonicity_B1=1,monotonicity_B2=1):
   #if d.boxes_intersection(B1_ft, B2_ft) ==[]:
   #  pass
   return sol  
-
-"""def combining_boxes(components):
-  for i in range(len(components)-1):
-    for j in range(i+1,len(components)):
-      if d.boxes_intersection(components[i],components[j])==[]:"""
-
-
 def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ball  On the case where tow monotonic boxes intersect
   n=len(B);
   P=[Pi.replace("\n","") for Pi in  open(system,"r").readlines()]
@@ -792,37 +623,81 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
   plane_components= planner_connected_compnants(monotonic_componants)
   H=[]
   for plane_component in plane_components:  
-        #pprint((plane_component))
         x1=float(min([ai[0][0] for ai in plane_component]))
         x2=float(max([ai[0][1] for ai in plane_component]))
         y1=float(min([ai[1][0] for ai in plane_component]))
         y2=float(max([ai[1][1] for ai in plane_component]))
-        #print([ai[1][0] for ai in plane_component]);input()
         components=connected_compnants(plane_component)
         #reminder to me: You should deal with case len(components)>2 
         t=estimating_t(components)
         r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr(components)]
-        
-        pprint(components)
         #t=[float(t[0]),float(t[1])]
-        B_Ball=[[x1,x2],[y1,y2]]+r +[t]
-        print(B_Ball)
-        #print(B_Ball)
+        B_Ball=[[x1,x2],[y1,y2]]+r +[t]      
         Ball_generating_system(P,B_Ball,X)
         H.append(B_Ball)
         os.system("ibexsolve   --eps-max="+ str(eps)+" -s  eq.txt  > output.txt")
         Solutions=computing_boxes()
-        print(Solutions)
-        input()
         if Solutions != "Empty":
           cer_Solutions += Solutions[0]
-          uncer_Solutions += Solutions[1] 
-  ploting_boxes(boxes[0],H);input()         
+          uncer_Solutions += Solutions[1]        
     #There still the case B1B2[0],B1B2[1] are not disjoint 
   ########################################################################################################
   #Solving Ball for B R^n such that C is monotonic and no other box has the same plane projection with B##
   ########################################################################################################
-  non_monotonic_pairs=intersect_in_2D(classes[1],classes[0]+classes[1]+classes[2],monotonicity=0)
+  checked_boxes=[]
+  for potential_cusp in classes[1]:
+    plane_intersecting_boxes= intersect_in_2D([potential_cusp],classes[0]+classes[1]+classes[2],monotonicity=0)
+    intersecting_boxes= [pair_i[1] for pair_i in plane_intersecting_boxes \
+     if  d.boxes_intersection(pair_i[1], potential_cusp)!=[] ] 
+    ##########
+    uni= potential_cusp[:]
+    checked_boxes.append(potential_cusp)
+    for box in intersecting_boxes:
+     if box in checked_boxes:
+      continue
+     uni = d.box_union(uni,box)
+     checked_boxes.append(box)
+    max_q1q2=d.distance(uni[2:],uni[2:])
+    max_q1q2=d.ftconstructor(max_q1q2[0],max_q1q2[1])
+    t=d.power_interval(max_q1q2,2)/4
+    t=[float(t.lower()),float(t.upper())]
+    B_Ball=uni +[[-1.01,1.01]]*(n-2)+[t]
+    sol=cusp_Ball_solver(P,B_Ball,X)
+    if sol != "Empty":
+         cer_Solutions += sol[0]
+         uncer_Solutions += sol[1]
+    #########################  
+    non_intersecting_boxes= [pair_i[1] for pair_i in plane_intersecting_boxes \
+     if  d.boxes_intersection(pair_i[1], potential_cusp)==[] ] 
+    for aligned in non_intersecting_boxes:
+      if aligned  in checked_boxes:
+        continue
+      boxes_intersect_aligned=[B  for B in non_intersecting_boxes if d.boxes_intersection(aligned,B) != []  ]
+      uni=aligned[:]
+      for boxi  in boxes_intersect_aligned:
+          if boxi in checked_boxes:
+            continue
+          uni=d.box_union(uni,boxi)
+          checked_boxes.append(boxi)
+      t=estimating_t([[potential_cusp],[uni]])
+      r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr([[potential_cusp],[uni]])]
+      B_Ball=potential_cusp[:2]+r +[t]      
+      Ball_generating_system(P,B_Ball,X)
+      os.system("ibexsolve   --eps-max="+ str(eps)+" -s  eq.txt  > output.txt")
+      Solutions=computing_boxes()
+      if Solutions != "Empty":
+          cer_Solutions += Solutions[0]
+          uncer_Solutions += Solutions[1]   
+  pprint((uncer_Solutions))             
+
+    
+
+
+
+
+
+
+  """non_monotonic_pairs=intersect_in_2D(classes[1],classes[0]+classes[1]+classes[2],monotonicity=0)
   for pair in non_monotonic_pairs:
     if  d.boxes_intersection(pair[0],pair[1]) != [] :
       uni=d.box_union(pair[0],pair[1])
@@ -832,8 +707,9 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
       t=[float(t.lower()),float(t.upper())]
       B_Ball=uni +[[-1.01,1.01]]*(n-2)+[t]
       sol=cusp_Ball_solver(P,B_Ball,X)
-      cer_Solutions += sol[0]
-      uncer_Solutions += sol[1]
+      if sol != "Empty":
+         cer_Solutions += sol[0]
+         uncer_Solutions += sol[1] 
     else:
       #if the boxes  pair[0], pair[1] do not intersect, we need to compute 3 Ball systems:
       #1) finding cusps or small loops in pair[0]
@@ -843,8 +719,9 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
       t1=[float(t1.lower()),float(t1.upper())]
       B_Ball=pair[0] +[[-1.01,1.01]]*(n-2)+[t1]
       sol=cusp_Ball_solver(P,B_Ball,X)
-      cer_Solutions += sol[0]
-      uncer_Solutions += sol[1]
+      if sol != "Empty":
+         cer_Solutions += sol[0]
+         uncer_Solutions += sol[1] 
       #2) finding cusps or small loops in pair[1] if C is not monotonic in pair[1]
       if pair[1] in classes[1]:
         max_q1q2=d.distance(pair[1][2:],pair[1][2:])
@@ -853,13 +730,11 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
         t2=[float(t2.lower()),float(t2.upper())]
         B_Ball=pair[1] +[[-1.01,1.01]]*(n-2)+[t2]
         sol=cusp_Ball_solver(P,B_Ball,X)
-        cer_Solutions += sol[0]
-        uncer_Solutions += sol[1]
-      #3) finding A_{2k+1} singularities whose a branch in pair[0] and the other in pair[1]
-      sol=Ball_given_2nboxes(system,X, B1B2[0],B1B2[1])
-      if sol != "Empty":
+        if sol != "Empty":
          cer_Solutions += sol[0]
          uncer_Solutions += sol[1] 
+      #3) finding A_{2k+1} singularities whose a branch in pair[0] and the other in pair[1]"""
+
   #########################################################################################
   #Determining whether a singular box is node or a cups_or_smallnode########################
   ##########################################################################################  
@@ -893,13 +768,12 @@ def checking_assumptions(curve_data): #the input of this function is the output 
 	else:
 		return 0
 System="system2.txt" 
-Box=[[-5, 15], [-15, 15],[-3.14,3.14],[-3.14,3.14]]
-#Box=[[-2.01,3.03],[-1.03,5.03],[-2.9,2.93]]
-X=[sp.Symbol("x"+str(i)) for i in range(1,5)]
+#Box=[[-5, 15], [-15, 15],[-3.14,3.14],[-3.14,3.14]]
+Box=[[-2.01,3.03],[-1.03,2.03],[-1.4,1.7]]
+X=[sp.Symbol("x"+str(i)) for i in range(1,4)]
 boxes =enclosing_curve(System,Box,X,eps=0.1)
 nodes, cups_or_smallnodes,uncer_Solutions=enclosing_singularities(System,boxes,Box,X)
-pprint(cups_or_smallnodes)
-pprint(uncer_Solutions )
+
 #plotting the singularities
 ploting_boxes(boxes[0],boxes[1] , nodes = nodes, cusps= cups_or_smallnodes,uncer_Solutions=uncer_Solutions )
 ##################################
