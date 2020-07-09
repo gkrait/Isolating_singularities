@@ -1,3 +1,4 @@
+ 
 import matplotlib.pyplot as plt
 import os
 import pickle 
@@ -132,15 +133,6 @@ def connected_compnants(boxes):
 def decimal_str(x: float, decimals: int = 10) -> str:
     return format(x, f".{decimals}f").lstrip().rstrip('0')                        
 
-
-
-
-
-
-
-
-
-
 def evaluation_exp(expr,B,X):
     expr_int=expr
     n=len(B)
@@ -229,7 +221,8 @@ def Ball_cusp_gen(equations,B_Ball,X):
         V += "x" +str(i+1) + " in " + str(B_Ball[i]) +" ; \n"
     for i in range(n,2*n-2):    
         V += "r" +str(i-n+3) + " in " + str(B_Ball[i]) +" ; \n"
-    V += "t" + " in " + str(B_Ball[2*n-2]) +" ; \n" 
+    V += "t" + " in " +str(B_Ball[2*n-2]) +" ; \n" 
+    #V += "t" + " in [" +str(0) +","+ str(B_Ball[2*n-2][1]) +"] ; \n" 
     V +="Constraints \n"   
     P=equations[:]
     for Pi in P:
@@ -306,11 +299,7 @@ B=[[-3.1,3.1],[-1,6.1],[-3.14,3.14],[-1.01,1.01]]
 pickle_in=open("boxes_second_branch","rb")
 branch1=pickle.load(pickle_in)
 pickle_in.close()
-
 branch= [ [ [float(decimal_str( boxij[0])),float( decimal_str(boxij[1])) ] for boxij in boxi] for boxi in branch1[0] ]  
-
-
-
 projection=[]
 uncer_projection =[]
 for box in branch:
@@ -327,7 +316,6 @@ for box in branch:
            uncer_projection += Answer 
 print(len(projection))
 print(len(uncer_projection))                  
-
 """
 
 
@@ -344,9 +332,6 @@ ax.set_ylim(6,6.25)
 #plt.yticks(np.arange(-20, 20, 2.0))
 ax.set_xlabel('q1')
 ax.set_ylabel('q2')
-
-
-
 for box in T:
      rectangle= plt.Rectangle((box[0][0],box[1][0]) , \
         box[0][1]-box[0][0],box[1][1]-box[1][0], fc='g')
@@ -360,7 +345,6 @@ input()
 """
 components=connected_compnants(sorted)
 t=estimating_t(components)
-
 S=finding_nodes(P,b[0],b[1],t)
 """
 
@@ -377,9 +361,6 @@ ax.set_ylim(10,14)
 #plt.yticks(np.arange(-20, 20, 2.0))
 ax.set_xlabel('q1')
 ax.set_ylabel('q2')
-
-
-
 for box in T[:]:
     rectangle= plt.Rectangle((float(box[0].lower()),float(box[1].lower()) ), \
         float(box[0].upper())-float(box[0].lower()),float(box[1].upper())-float(box[1].lower()), fc='r')
@@ -405,15 +386,8 @@ for box in C[2]:
 
 
 """
-
-
-
-
 pprint(sympy.Matrix(intersting_boxes))
-
-
      
-
 #print(finding_nodes(P))
 """
 
@@ -421,24 +395,13 @@ pprint(sympy.Matrix(intersting_boxes))
 
 
 """
-
-
-
-
-
-
-
 X=[]
 Y=[]
 for box in  T:
     X.append(box[4][0])
     Y.append(box[5][0])
-
 plt.plot(X,Y,"ro")
 plt.show()    
-
-
-
 """
 
 
@@ -451,13 +414,10 @@ def connected_components(boxes): #not working
             index[i].add(j)
             index[j].add(i)
     
-
     components=[index[0]]
     for i in index[0]:
         index[0] +=index[i]
     
-
-
     for i in range(1,len(boxes)):
         for component in components:
             if component.intersection(index[i]) !=[]:
@@ -466,10 +426,3 @@ def connected_components(boxes): #not working
 
 
 
-
-            
-
-    
-
-
-      

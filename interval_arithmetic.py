@@ -874,6 +874,8 @@ def B_Ball_calculator(B):   # returns B_Ball
 
 def box_union(B1,B2):
     the_union=[]
+    if B1==[]:
+      return B2
     if type(B1[0])==type(ft.arb(1)):
       for i in range(len(B1)) :
             the_union.append(B1[i].union(B2[i]))

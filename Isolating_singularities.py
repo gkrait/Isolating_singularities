@@ -431,7 +431,6 @@ def system_generator(f,B,X):
     f = open("eq.txt", "w+")
     f.write("Variables \n")
     for i in range(len(X)):
-        
         f.write(str(X[i]) + " in " + str(B[i]) + " ; \n")
     f.write("Constraints \n")
     for Li in L:
@@ -500,9 +499,12 @@ def enclosing_curve(system,B,X,eps=0.1):
     os.system("ibexsolve   --eps-max=" + str(eps) +" -s  eq.txt  > output.txt")
     ibex_output=computing_boxes()
     #ibex_output=solving_with_ibex(eps)
-    if ibex_output ==[[],[]]:  
+    if ibex_output ==[[],[]] and max([Bi[1]-Bi[0] for Bi in L[0]  ]) < eps*0.01 :  
+      uncertified_boxes.append(L[0])
+      L.remove(L[0]);
+    elif ibex_output ==[[],[]] :
       children=plane_subdivision(L[0])
-      L.remove(L[0])
+      L.remove(L[0]);
       L += children
     elif ibex_output== "Empty":
       L.remove(L[0])
@@ -531,61 +533,68 @@ def loopsfree_checker(f,certified_boxes,uncer_boxes,P): #Assumption: no cusps
 		L =  eval_file_gen(f,certified_boxes,X)
 	return L	   
 def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is even
-	functions=["sin","cos","tan","exp"]+special_function
-	n=len(boxes[0])
-	m=len(boxes)
-	g=open(f,'r')
-	P_str=g.readlines()
-	P_str= [Pi.replace('\n','') for Pi in P_str]
-	P_str= [Pi.replace('^','**') for Pi in P_str]
-	P_exp= [parse_expr(Pi) for Pi in P_str]
-	#computing jac and the minors
-	jac=sp.Matrix(P_str).jacobian(sp.Matrix(X))
-	minor1=jac[:,1:].det()
-	minor2=jac[:,[i for i in range(n) if i != 1]  ].det()
-	fil=open("evaluation_file.py","w")
-	fil.write("import flint as ft \n")
-	fil.write("import sympy as sp \n")
-	fil.write("import interval_arithmetic as d \n")
-	fil.write("def eval_func():\n  pass \n")
-	fil.write("boxes="+str(boxes)+"\n")
-	fil.write("ftboxes=[ [d.ftconstructor(Bi[0],Bi[1]) for Bi in B ] for B in boxes ] \n"    )
-	fil.write("n=len(boxes[0])\n")
-	fil.write("m=len(boxes)\n")
-	fil.write("m1=[]\n")
-	fil.write("m2=[]\n")
-	minor1_str=str(minor1)
-	minor2_str=str(minor2)
-	for i in range(n):
-		minor1_str= minor1_str.replace("x"+str(i+1),"B["+str(i)+"]" )
-		minor2_str= minor2_str.replace("x"+str(i+1),"B["+str(i)+"]" )
-	for func in functions:
-		minor1_str=minor1_str.replace(func,"ft.arb."+func)
-		minor2_str=minor2_str.replace(func,"ft.arb."+func)
-	fil.write("for B in ftboxes: \n")
-	fil.write("   m1.append("+ minor1_str + ") \n")
-	fil.write("   m2.append("+ minor2_str + ") \n")	
-	fil.write("innrer_loops=[i for i in range(m) if 0 in m1[i] and 0 in m2[i] ]\n")
-	fil.write("print(innrer_loops)\n")
-	fil.close()
-	t=os.popen("python3 evaluation_file.py ").read()
-	return t
+  functions=["sin","cos","tan","exp"]+special_function
+
+  if len(boxes[0])==0:
+    return []
+    
+  n=len(boxes[0])
+  m=len(boxes)
+  g=open(f,'r')
+  P_str=g.readlines()
+  P_str= [Pi.replace('\n','') for Pi in P_str]
+  P_str= [Pi.replace('^','**') for Pi in P_str]
+  P_exp= [parse_expr(Pi) for Pi in P_str]
+  #computing jac and the minors
+  jac=sp.Matrix(P_str).jacobian(sp.Matrix(X))
+  minor1=jac[:,1:].det()
+  minor2=jac[:,[i for i in range(n) if i != 1]  ].det()
+  fil=open("evaluation_file.py","w")
+  fil.write("import flint as ft \n")
+  fil.write("import sympy as sp \n")
+  fil.write("import interval_arithmetic as d \n")
+  fil.write("def eval_func():\n  pass \n")
+  fil.write("boxes="+str(boxes)+"\n")
+  fil.write("ftboxes=[ [d.ftconstructor(Bi[0],Bi[1]) for Bi in B ] for B in boxes ] \n"    )
+  fil.write("n=len(boxes[0])\n")
+  fil.write("m=len(boxes)\n")
+  fil.write("m1=[]\n")
+  fil.write("m2=[]\n")
+  minor1_str=str(minor1)
+  minor2_str=str(minor2)
+  for i in range(n):
+    minor1_str= minor1_str.replace("x"+str(i+1),"B["+str(i)+"]" )
+    minor2_str= minor2_str.replace("x"+str(i+1),"B["+str(i)+"]" )
+  for func in functions:
+    minor1_str=minor1_str.replace(func,"ft.arb."+func)
+    minor2_str=minor2_str.replace(func,"ft.arb."+func)
+  fil.write("for B in ftboxes: \n")
+  fil.write("   m1.append("+ minor1_str + ") \n")
+  fil.write("   m2.append("+ minor2_str + ") \n")  
+  fil.write("innrer_loops=[i for i in range(m) if 0 in m1[i] and 0 in m2[i] ]\n")
+  fil.write("print(innrer_loops)\n")
+  fil.close()
+  t=os.popen("python3 evaluation_file.py ").read()
+  return t
 def boxes_classifier(system,boxes,X,special_function=[]):
-	certified_boxes ,uncer_boxes =boxes
-	L=eval_file_gen(system,certified_boxes,X)
-  
-	it=0
-	L=L.replace('[','')
-	L=L.replace(']','')
-	L=L.replace('\n','')
-	L=L.split(",")
-	if L !=[""]:
-		L=[int(li) for li in L]
-		return 	[ [certified_boxes[i]  for i in range(len(certified_boxes)) if i not in L] ,\
-		[certified_boxes[i]  for i in L ], \
-		uncer_boxes ]
-	else:
-			return  [ [certified_boxes[i]  for i in range(len(certified_boxes)) if i not in L] ,[], uncer_boxes ] #can be enhanced
+  if len(boxes[0])==0:
+    return [[],[],boxes[1]]
+  certified_boxes ,uncer_boxes =boxes
+  L=eval_file_gen(system,certified_boxes,X)
+  if L==[]:
+    return [[],[],uncer_boxes]
+  it=0
+  L=L.replace('[','')
+  L=L.replace(']','')
+  L=L.replace('\n','')
+  L=L.split(",")
+  if L !=[""]:
+    L=[int(li) for li in L]
+    return   [ [certified_boxes[i]  for i in range(len(certified_boxes)) if i not in L] ,\
+    [certified_boxes[i]  for i in L ], \
+    uncer_boxes ]
+  else:
+      return  [ [certified_boxes[i]  for i in range(len(certified_boxes)) if i not in L] ,[], uncer_boxes ] #can be enhanced
 def projection_checker(solutions):
   if len(solutions)==0:
     return [[],[]]
@@ -669,17 +678,24 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
         y2=float(max([ai[1][1] for ai in plane_component]))
         components=connected_compnants(plane_component)
         pairs_of_branches=all_pairs_oflist(components)
+
         for pair_branches in  pairs_of_branches:
+          all_boxes=pair_branches[0]+pair_branches[1]
+          uni=[]
+          for box in all_boxes:
+            uni = d.box_union(uni,box)
 
           t=estimating_t(pair_branches)
           r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr(pair_branches)]
-          B_Ball=[[x1,x2],[y1,y2]]+r +[t]      
+          B_Ball=uni[:2] +r +[t] 
+          H.append(B_Ball)    
           Ball_generating_system(P,B_Ball,X)
           os.system("ibexsolve   --eps-max="+ str(eps)+" -s  eq.txt  > output.txt")
           Solutions=computing_boxes()
           if Solutions != "Empty":
             cer_Solutions += Solutions[0]
             uncer_Solutions += Solutions[1]  
+          
 
             
     #There still the case B1B2[0],B1B2[1] are not disjoint 
@@ -687,12 +703,13 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
   #Solving Ball for potential_cusp, a box in  R^n such that C is not monotonic 
   ########################################################################################################
   checked_boxes=[]
-  pprint(classes[1]);input()
   for potential_cusp in classes[1]:
     ###finding cusps (or small loops) in potential_cusp####
     plane_intersecting_boxes= intersect_in_2D([potential_cusp],classes[0]+classes[1]+classes[2],monotonicity=0)
+    
     intersecting_boxes= [pair_i[1] for pair_i in plane_intersecting_boxes \
      if  d.boxes_intersection(pair_i[1], potential_cusp)!=[] ] 
+    
     ##########
     uni= potential_cusp[:]
     checked_boxes.append(potential_cusp)
@@ -713,6 +730,7 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
     ####finding nodes that have the same projection with potential_cusp
     non_intersecting_boxes= [pair_i[1] for pair_i in plane_intersecting_boxes \
      if  d.boxes_intersection(pair_i[1], potential_cusp)==[] ] 
+    
     for aligned in non_intersecting_boxes:
       if aligned  in checked_boxes:
         continue
@@ -735,9 +753,8 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
   nodes=[]
   cups_or_smallnodes=[]
   checker=projection_checker(cer_Solutions)
-
   uncer_Solutions= uncer_Solutions +checker[1]
-  cer_Solutions= checker[0]
+  cer_Solutions=[Bi for Bi in checker[0] if Bi[2*n-2][1] >= 0   ] 
   for solution in cer_Solutions :
     if 0 >= solution[2*n-2][0] and 0 <= solution[2*n-2][1]:
       cups_or_smallnodes.append(solution)
@@ -767,11 +784,11 @@ def checking_assumptions(curve_data): #the input of this function is the output 
 		return 0
 System="system.txt" 
 #Box=[[-5, 15], [-15, 15],[-3.14,3.14],[-3.14,3.14]]
-Box=[[-0.51,3.03],[-1.03,1.03],[-1.6,1.6]]
+Box=[[-2.01,3.03],[-1.03,5.03],[-1.6,1.6]]
 X=[sp.Symbol("x"+str(i)) for i in range(1,4)]
 boxes =enclosing_curve(System,Box,X,eps=0.1)
+
 nodes, cups_or_smallnodes,uncer_Solutions=enclosing_singularities(System,boxes,Box,X)
-print(nodes, cups_or_smallnodes,uncer_Solutions)
 #plotting the singularities
 ploting_boxes(boxes[0],boxes[1] , nodes = nodes, cusps= cups_or_smallnodes,uncer_Solutions=uncer_Solutions )
 ##################################
