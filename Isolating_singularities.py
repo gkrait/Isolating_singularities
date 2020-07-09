@@ -13,12 +13,17 @@ import matplotlib.patches as mpatches
 
 def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,nodes=[], cusps=[],uncer_Solutions=[],color="g"):
    fig, ax = plt.subplots()
-   plt.grid(True)
+   #plt.grid(True)
    ax.set_xlim(B[0][0], B[0][1])
    ax.set_ylim(B[1][0], B[1][1])
    ax.set_xlabel('x'+str(var[0]+1))
    ax.set_ylabel('x'+str(var[1]+1))
-   ax.set_title('The plane projection for x'+str(var[0])+" and x" +str(var[1]) )
+   try:
+    ax.set_title(open("system.txt","r").read())
+   except:
+    pass
+   
+
    c=0
    green_patch = mpatches.Patch(color='green', label='smooth part')
    red_patch = mpatches.Patch(color='red', label='unknown part')
@@ -42,9 +47,9 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,n
       (0.09),(0.09),color="blue", fc='y',fill=None)
      plt.gca().add_patch(rectangle)
    for box in uncer_Solutions:
-     rectangle= plt.Rectangle((box[0][0]-0.005,box[1][0]-0.005) , \
-      (box[0][1]-box[0][0]+0.03),(box[1][1]-box[1][0]+0.03),color="red", fc='r',fill=None)
-     plt.gca().add_patch(rectangle)   
+     rectangle= plt.Rectangle((box[0][0]-0.05,box[1][0]-0.05) ,\
+      (0.09),(0.09),color="red", fc='y',fill=None)
+     plt.gca().add_patch(rectangle)  
    
    plt.show()
 def Ball_node_gen(equations,B_Ball,X):
@@ -568,6 +573,7 @@ def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is e
 def boxes_classifier(system,boxes,X,special_function=[]):
 	certified_boxes ,uncer_boxes =boxes
 	L=eval_file_gen(system,certified_boxes,X)
+  
 	it=0
 	L=L.replace('[','')
 	L=L.replace(']','')
@@ -580,17 +586,41 @@ def boxes_classifier(system,boxes,X,special_function=[]):
 		uncer_boxes ]
 	else:
 			return  [ [certified_boxes[i]  for i in range(len(certified_boxes)) if i not in L] ,[], uncer_boxes ] #can be enhanced
-def filtering_twins(solutions):
-	n=len(solutions[0])
-	ftsolutions=[ [d.ftconstructor(boxi[0],boxi[1]) for boxi in box ] for box in solutions ]
-	twin=[[]]*len(solutions)
-	for i in range(len(solutions)):
-		for j in range(i+1,len(solutions)):
-			if boxes_intersection(ftsolutions[i][:n],ftsolutions[j][:n]) !=[] \
-			and  boxes_intersection(ftsolutions[i][n:], [-box for box in  ftsolutions[j][n:]]) !=[]:
-				twin[i].append(j)
-				twin[j].append(i)
-	return twin				
+def projection_checker(solutions):
+  if len(solutions)==0:
+    return [[],[]]
+  m=len(solutions[0])
+  n=int((m+1)/2)
+  intersect_in2d=[[]]*len(solutions)
+  for i in range(len(solutions)-1):
+    for j in range(i+1,len(solutions)):
+      """pprint(sp.Matrix(solutions[i]))
+      pprint(sp.Matrix(solutions[j]));"""
+      if d.boxes_intersection(solutions[i][:2],solutions[j][:2]) !=[] and \
+      d.boxes_intersection(solutions[i][n:2*n-2],[[-Bi[1],-Bi[0]] for Bi in solutions[j][n:2*n-2]]) ==[] and \
+       d.boxes_intersection(solutions[i][2:n], solutions[j][2:n]) ==[] : 
+        intersect_in2d[i] = intersect_in2d[i]+[ j]
+      """print(d.boxes_intersection(solutions[i][:2],solutions[j][:2]) !=[] and \
+      d.boxes_intersection(solutions[i][n:2*n-2],[[-Bi[1],-Bi[0]] for Bi in solutions[j][n:2*n-2]]) ==[] and \
+       d.boxes_intersection(solutions[i][2:n], solutions[j][2:n]) ==[] );input() """
+  accepted=[]
+  acc_ind=[]
+  unaccepted=[]
+  unacc_ind=[]
+  for i in range(len(solutions)):
+
+    if len(intersect_in2d[i]) ==0 and i not in unacc_ind:
+      accepted.append(solutions[i])
+
+      continue
+    unaccepted.append(solutions[i])
+    unacc_ind.append(i)
+    for k in intersect_in2d[i]:
+     if k not in unacc_ind:
+       
+       unaccepted.append(solutions[k]) 
+       unacc_ind.append(k)  
+  return [accepted, unaccepted] 		
 def Ball_given_2nboxes(system,X, B1,B2, monotonicity_B1=1,monotonicity_B2=1):
   B1_ft=[d.ftconstructor(Bi[0],Bi[1]) for Bi in B1]
   B2_ft=[d.ftconstructor(Bi[0],Bi[1]) for Bi in B2]
@@ -608,6 +638,12 @@ def Ball_given_2nboxes(system,X, B1,B2, monotonicity_B1=1,monotonicity_B2=1):
   #if d.boxes_intersection(B1_ft, B2_ft) ==[]:
   #  pass
   return sol  
+def all_pairs_oflist(L):
+  pairs=[]
+  for i in range(len(L)-1):
+    for j in range(i+1,len(L)):
+      pairs.append([L[i],L[j]])
+  return pairs    
 def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ball  On the case where tow monotonic boxes intersect
   n=len(B);
   P=[Pi.replace("\n","") for Pi in  open(system,"r").readlines()]
@@ -620,6 +656,10 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
   #######################################################################
   monotonic_pairs=intersect_in_2D(classes[0],classes[0])
   monotonic_componants=[ Bi[0] for Bi in  monotonic_pairs ] +[ Bi[1] for Bi in  monotonic_pairs ]
+  """checked_boxes=[]
+  for potential_node in monotonic_pairs:
+    if potential_node[0] in checked_boxes and potential_node[1] in checked_boxes:
+      continue"""
   plane_components= planner_connected_compnants(monotonic_componants)
   H=[]
   for plane_component in plane_components:  
@@ -628,24 +668,28 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
         y1=float(min([ai[1][0] for ai in plane_component]))
         y2=float(max([ai[1][1] for ai in plane_component]))
         components=connected_compnants(plane_component)
-        #reminder to me: You should deal with case len(components)>2 
-        t=estimating_t(components)
-        r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr(components)]
-        #t=[float(t[0]),float(t[1])]
-        B_Ball=[[x1,x2],[y1,y2]]+r +[t]      
-        Ball_generating_system(P,B_Ball,X)
-        H.append(B_Ball)
-        os.system("ibexsolve   --eps-max="+ str(eps)+" -s  eq.txt  > output.txt")
-        Solutions=computing_boxes()
-        if Solutions != "Empty":
-          cer_Solutions += Solutions[0]
-          uncer_Solutions += Solutions[1]        
+        pairs_of_branches=all_pairs_oflist(components)
+        for pair_branches in  pairs_of_branches:
+
+          t=estimating_t(pair_branches)
+          r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr(pair_branches)]
+          B_Ball=[[x1,x2],[y1,y2]]+r +[t]      
+          Ball_generating_system(P,B_Ball,X)
+          os.system("ibexsolve   --eps-max="+ str(eps)+" -s  eq.txt  > output.txt")
+          Solutions=computing_boxes()
+          if Solutions != "Empty":
+            cer_Solutions += Solutions[0]
+            uncer_Solutions += Solutions[1]  
+
+            
     #There still the case B1B2[0],B1B2[1] are not disjoint 
   ########################################################################################################
-  #Solving Ball for B R^n such that C is monotonic and no other box has the same plane projection with B##
+  #Solving Ball for potential_cusp, a box in  R^n such that C is not monotonic 
   ########################################################################################################
   checked_boxes=[]
+  pprint(classes[1]);input()
   for potential_cusp in classes[1]:
+    ###finding cusps (or small loops) in potential_cusp####
     plane_intersecting_boxes= intersect_in_2D([potential_cusp],classes[0]+classes[1]+classes[2],monotonicity=0)
     intersecting_boxes= [pair_i[1] for pair_i in plane_intersecting_boxes \
      if  d.boxes_intersection(pair_i[1], potential_cusp)!=[] ] 
@@ -666,7 +710,7 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
     if sol != "Empty":
          cer_Solutions += sol[0]
          uncer_Solutions += sol[1]
-    #########################  
+    ####finding nodes that have the same projection with potential_cusp
     non_intersecting_boxes= [pair_i[1] for pair_i in plane_intersecting_boxes \
      if  d.boxes_intersection(pair_i[1], potential_cusp)==[] ] 
     for aligned in non_intersecting_boxes:
@@ -687,65 +731,19 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
       Solutions=computing_boxes()
       if Solutions != "Empty":
           cer_Solutions += Solutions[0]
-          uncer_Solutions += Solutions[1]   
-  pprint((uncer_Solutions))             
-
-    
-
-
-
-
-
-
-  """non_monotonic_pairs=intersect_in_2D(classes[1],classes[0]+classes[1]+classes[2],monotonicity=0)
-  for pair in non_monotonic_pairs:
-    if  d.boxes_intersection(pair[0],pair[1]) != [] :
-      uni=d.box_union(pair[0],pair[1])
-      max_q1q2=d.distance(uni[2:],uni[2:])
-      max_q1q2=d.ftconstructor(max_q1q2[0],max_q1q2[1])
-      t=d.power_interval(max_q1q2,2)/4
-      t=[float(t.lower()),float(t.upper())]
-      B_Ball=uni +[[-1.01,1.01]]*(n-2)+[t]
-      sol=cusp_Ball_solver(P,B_Ball,X)
-      if sol != "Empty":
-         cer_Solutions += sol[0]
-         uncer_Solutions += sol[1] 
-    else:
-      #if the boxes  pair[0], pair[1] do not intersect, we need to compute 3 Ball systems:
-      #1) finding cusps or small loops in pair[0]
-      max_q1q2=d.distance(pair[0][2:],pair[0][2:])
-      max_q1q2=d.ftconstructor(max_q1q2[0],max_q1q2[1])
-      t1=d.power_interval(max_q1q2,2)/4
-      t1=[float(t1.lower()),float(t1.upper())]
-      B_Ball=pair[0] +[[-1.01,1.01]]*(n-2)+[t1]
-      sol=cusp_Ball_solver(P,B_Ball,X)
-      if sol != "Empty":
-         cer_Solutions += sol[0]
-         uncer_Solutions += sol[1] 
-      #2) finding cusps or small loops in pair[1] if C is not monotonic in pair[1]
-      if pair[1] in classes[1]:
-        max_q1q2=d.distance(pair[1][2:],pair[1][2:])
-        max_q1q2=d.ftconstructor(max_q1q2[0],max_q1q2[1])
-        t2=d.power_interval(max_q1q2,2)/4
-        t2=[float(t2.lower()),float(t2.upper())]
-        B_Ball=pair[1] +[[-1.01,1.01]]*(n-2)+[t2]
-        sol=cusp_Ball_solver(P,B_Ball,X)
-        if sol != "Empty":
-         cer_Solutions += sol[0]
-         uncer_Solutions += sol[1] 
-      #3) finding A_{2k+1} singularities whose a branch in pair[0] and the other in pair[1]"""
-
-  #########################################################################################
-  #Determining whether a singular box is node or a cups_or_smallnode########################
-  ##########################################################################################  
+          uncer_Solutions += Solutions[1]               
   nodes=[]
   cups_or_smallnodes=[]
+  checker=projection_checker(cer_Solutions)
+
+  uncer_Solutions= uncer_Solutions +checker[1]
+  cer_Solutions= checker[0]
   for solution in cer_Solutions :
     if 0 >= solution[2*n-2][0] and 0 <= solution[2*n-2][1]:
       cups_or_smallnodes.append(solution)
     else:
-      nodes.append(solution)
-  return [nodes,cups_or_smallnodes, uncer_Solutions ]     
+      nodes.append(solution) 
+  return [nodes,cups_or_smallnodes, uncer_Solutions ]    
 def assum_alph3_checker(solutions):
 	comparing_list=[[]]*len(solutions)
 	for i in range(len(solutions)-1):
@@ -767,13 +765,13 @@ def checking_assumptions(curve_data): #the input of this function is the output 
 		return 1
 	else:
 		return 0
-System="system2.txt" 
+System="system.txt" 
 #Box=[[-5, 15], [-15, 15],[-3.14,3.14],[-3.14,3.14]]
-Box=[[-2.01,3.03],[-1.03,2.03],[-1.4,1.7]]
+Box=[[-0.51,3.03],[-1.03,1.03],[-1.6,1.6]]
 X=[sp.Symbol("x"+str(i)) for i in range(1,4)]
 boxes =enclosing_curve(System,Box,X,eps=0.1)
 nodes, cups_or_smallnodes,uncer_Solutions=enclosing_singularities(System,boxes,Box,X)
-
+print(nodes, cups_or_smallnodes,uncer_Solutions)
 #plotting the singularities
 ploting_boxes(boxes[0],boxes[1] , nodes = nodes, cusps= cups_or_smallnodes,uncer_Solutions=uncer_Solutions )
 ##################################
