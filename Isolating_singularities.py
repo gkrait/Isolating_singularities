@@ -18,12 +18,14 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,n
    ax.set_ylim(B[1][0], B[1][1])
    ax.set_xlabel('x'+str(var[0]+1))
    ax.set_ylabel('x'+str(var[1]+1))
-   try:
-    ax.set_title(open("system.txt","r").read())
+   """try:
+    ax.title(open("system.txt","r").read())
    except:
-    pass
-   
-
+    pass"""
+   textstr = open("system.txt","r").read()
+   props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+   ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=9,
+        verticalalignment='top', bbox=props)
    c=0
    green_patch = mpatches.Patch(color='green', label='smooth part')
    red_patch = mpatches.Patch(color='red', label='unknown part')
@@ -200,9 +202,7 @@ def estimating_t(components,upper_bound=19000.8):  #it works only if len(compone
   t2=0
   for box1 in components[0]:
     for box2 in components[1]:
-
         a=d.distance(box1[2:],box2[2:])
-
         if t1 > a[0]:
           t1=a[0]
         if t2<a[1]:
@@ -678,26 +678,23 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
         y2=float(max([ai[1][1] for ai in plane_component]))
         components=connected_compnants(plane_component)
         pairs_of_branches=all_pairs_oflist(components)
-
         for pair_branches in  pairs_of_branches:
           all_boxes=pair_branches[0]+pair_branches[1]
           uni=[]
           for box in all_boxes:
             uni = d.box_union(uni,box)
-
           t=estimating_t(pair_branches)
           r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr(pair_branches)]
-          B_Ball=uni[:2] +r +[t] 
-          H.append(B_Ball)    
+          B_Ball=[[x1,x2],[y1,y2]] +r +[t]   
           Ball_generating_system(P,B_Ball,X)
           os.system("ibexsolve   --eps-max="+ str(eps)+" -s  eq.txt  > output.txt")
           Solutions=computing_boxes()
           if Solutions != "Empty":
             cer_Solutions += Solutions[0]
-            uncer_Solutions += Solutions[1]  
-          
-
-            
+            uncer_Solutions += Solutions[1]
+          if Solutions==[[],[]] :
+              uncer_Solutions.append(B_Ball)  
+      
     #There still the case B1B2[0],B1B2[1] are not disjoint 
   ########################################################################################################
   #Solving Ball for potential_cusp, a box in  R^n such that C is not monotonic 
@@ -706,11 +703,10 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
   for potential_cusp in classes[1]:
     ###finding cusps (or small loops) in potential_cusp####
     plane_intersecting_boxes= intersect_in_2D([potential_cusp],classes[0]+classes[1]+classes[2],monotonicity=0)
-    
     intersecting_boxes= [pair_i[1] for pair_i in plane_intersecting_boxes \
-     if  d.boxes_intersection(pair_i[1], potential_cusp)!=[] ] 
-    
+     if  d.boxes_intersection(pair_i[1], potential_cusp)!=[] ]     
     ##########
+    H=[]
     uni= potential_cusp[:]
     checked_boxes.append(potential_cusp)
     for box in intersecting_boxes:
@@ -723,10 +719,13 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
     t=d.power_interval(max_q1q2,2)/4
     t=[float(t.lower()),float(t.upper())]
     B_Ball=uni +[[-1.01,1.01]]*(n-2)+[t]
+    H.append(B_Ball)
     sol=cusp_Ball_solver(P,B_Ball,X)
     if sol != "Empty":
          cer_Solutions += sol[0]
          uncer_Solutions += sol[1]
+    elif Solutions == [[],[]]:
+              uncer_Solutions.append(B_Ball)     
     ####finding nodes that have the same projection with potential_cusp
     non_intersecting_boxes= [pair_i[1] for pair_i in plane_intersecting_boxes \
      if  d.boxes_intersection(pair_i[1], potential_cusp)==[] ] 
@@ -743,13 +742,16 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
           checked_boxes.append(boxi)
       t=estimating_t([[potential_cusp],[uni]])
       r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr([[potential_cusp],[uni]])]
-      B_Ball=potential_cusp[:2]+r +[t]      
+      B_Ball=potential_cusp[:2]+r +[t]  
+      H.append(H)    
       Ball_generating_system(P,B_Ball,X)
       os.system("ibexsolve   --eps-max="+ str(eps)+" -s  eq.txt  > output.txt")
       Solutions=computing_boxes()
       if Solutions != "Empty":
           cer_Solutions += Solutions[0]
-          uncer_Solutions += Solutions[1]               
+          uncer_Solutions += Solutions[1] 
+      elif Solutions == [[],[]]:
+              uncer_Solutions.append(B_Ball)                  
   nodes=[]
   cups_or_smallnodes=[]
   checker=projection_checker(cer_Solutions)
@@ -784,7 +786,8 @@ def checking_assumptions(curve_data): #the input of this function is the output 
 		return 0
 System="system.txt" 
 #Box=[[-5, 15], [-15, 15],[-3.14,3.14],[-3.14,3.14]]
-Box=[[-2.01,3.03],[-1.03,5.03],[-1.6,1.6]]
+#Box=[[-1.2,1.2],[-1.3,1.5],[-4.2,2]]
+Box=[[-1.2,1.2],[-1.5,1.5],[-4.2,2]]
 X=[sp.Symbol("x"+str(i)) for i in range(1,4)]
 boxes =enclosing_curve(System,Box,X,eps=0.1)
 
