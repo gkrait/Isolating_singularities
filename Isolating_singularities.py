@@ -1,4 +1,4 @@
-
+import math
 import matplotlib.pyplot as plt
 import os
 import pickle 
@@ -9,9 +9,10 @@ import sympy as sp
 import os 
 from cusp import cusp_Ball_solver, evaluation_exp
 import matplotlib.patches as mpatches
-
-
-def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,nodes=[], cusps=[],uncer_Solutions=[],color="g"):
+import csv
+from scipy import spatial
+import flint as ft
+def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],x=0.1,a=1,b=10,nodes=[], cusps=[],uncer_Solutions=[],cer=[[0,0],0] ):
    fig, ax = plt.subplots()
    #plt.grid(True)
    ax.set_xlim(B[0][0], B[0][1])
@@ -34,25 +35,26 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],a=1,b=10,n
    plt.legend(handles=[green_patch,red_patch,node_patch,cusp_patch])
    for box in boxes:
      rectangle= plt.Rectangle((box[var[0]][0],box[var[1]][0]) , \
-      a*(box[var[0]][1]-box[var[0]][0]),a*(box[var[1]][1]-box[var[1]][0]), fc=color)
+      a*(box[var[0]][1]-box[var[0]][0]),a*(box[var[1]][1]-box[var[1]][0]),color="green")
      plt.gca().add_patch(rectangle)
    for box in uncer_boxes:
       rectangle= plt.Rectangle((box[var[0]][0],box[var[1]][0]) , \
       a*(box[var[0]][1]-box[var[0]][0]),a*(box[var[1]][1]-box[var[1]][0]), fc='r')
       plt.gca().add_patch(rectangle)
    for box in nodes:
-     rectangle= plt.Rectangle((box[0][0]-0.05,box[1][0]-0.05) ,\
-      (0.09),(0.09), fc='y',fill=None)
+     rectangle= plt.Rectangle((box[0][0]-x,box[1][0]-x) ,\
+      2*x+box[0][1]-box[0][0],2*x+box[1][1]-box[1][0], fc='y',fill=None)
      plt.gca().add_patch(rectangle) 
    for box in cusps:
-     rectangle= plt.Rectangle((box[0][0]-0.05,box[1][0]-0.05) ,\
-      (0.09),(0.09),color="blue", fc='y',fill=None)
-     plt.gca().add_patch(rectangle)
+     rectangle= plt.Rectangle((box[0][0]-x,box[1][0]-x) ,\
+      2*x+box[0][1]-box[0][0],2*x+box[1][1]-box[1][0], fc='y',color="blue",fill=None)
+     plt.gca().add_patch(rectangle) 
    for box in uncer_Solutions:
-     rectangle= plt.Rectangle((box[0][0]-0.05,box[1][0]-0.05) ,\
-      (0.09),(0.09),color="red", fc='y',fill=None)
-     plt.gca().add_patch(rectangle)  
-   
+     rectangle= plt.Rectangle((box[0][0]-x,box[1][0]-x) ,\
+      2*x+box[0][1]-box[0][0],2*x+box[1][1]-box[1][0], fc='y',color="red",fill=None)
+     plt.gca().add_patch(rectangle)   
+   circle=plt.Circle((cer[0][0], cer[0][1]), cer[1],color="blue", fill=False)
+   ax.add_artist(circle) 
    plt.show()
 def Ball_node_gen(equations,B_Ball,X):
     P=open(equations,"r").readlines()
@@ -396,6 +398,20 @@ def intersect_in_2D(class1,class2,monotonicity=1):
            if d.boxes_intersection(class1[i][:2],class2[j][:2]) !=[]:
              if [class2[j],class1[i]] not in pl_intesected_pairs:
                  pl_intesected_pairs.append([class1[i],class2[j]])
+  elif  monotonicity==2:       
+       inters_indic=[]
+       for i in range(len(class1)):
+         inters_indic.append([])
+         for j in range(len(class2)):
+           if d.boxes_intersection(class1[i][:2],class2[j][:2]) !=[]:
+             inters_indic[i]=  inters_indic[i] +[j] 
+       for k in range(len(class1)):
+         if len(inters_indic[k])> 3:
+          for j in range(len(inters_indic[k])):
+            if  [class2[j],class1[k]] not in pl_intesected_pairs:
+              pl_intesected_pairs.append([class1[k], class2[j]])
+       
+                      
   return pl_intesected_pairs     
 def solving_fornodes(equations,boxes,B,X,eps=0.1):
     plane_components=detecting_nodes(boxes,B,equations,X,eps)#[0]
@@ -496,7 +512,7 @@ def enclosing_curve(system,B,X,eps=0.1):
   while len(L) !=0: 
     system_generator(system,L[0],X)
     content=open("output.txt","r").readlines()
-    os.system("ibexsolve   --eps-max=" + str(eps) +" -s  eq.txt  > output.txt")
+    os.system("ibexsolve   --eps-max=" + str(eps) +"  -s  eq.txt  > output.txt")
     ibex_output=computing_boxes()
     #ibex_output=solving_with_ibex(eps)
     if ibex_output ==[[],[]] and max([Bi[1]-Bi[0] for Bi in L[0]  ]) < eps*0.01 :  
@@ -534,10 +550,8 @@ def loopsfree_checker(f,certified_boxes,uncer_boxes,P): #Assumption: no cusps
 	return L	   
 def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is even
   functions=["sin","cos","tan","exp"]+special_function
-
   if len(boxes[0])==0:
     return []
-    
   n=len(boxes[0])
   m=len(boxes)
   g=open(f,'r')
@@ -549,11 +563,10 @@ def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is e
   jac=sp.Matrix(P_str).jacobian(sp.Matrix(X))
   minor1=jac[:,1:].det()
   minor2=jac[:,[i for i in range(n) if i != 1]  ].det()
-  fil=open("evaluation_file.py","w")
+  fil=open("evaluation_file1.py","w")
   fil.write("import flint as ft \n")
   fil.write("import sympy as sp \n")
   fil.write("import interval_arithmetic as d \n")
-  fil.write("def eval_func():\n  pass \n")
   fil.write("boxes="+str(boxes)+"\n")
   fil.write("ftboxes=[ [d.ftconstructor(Bi[0],Bi[1]) for Bi in B ] for B in boxes ] \n"    )
   fil.write("n=len(boxes[0])\n")
@@ -569,12 +582,12 @@ def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is e
     minor1_str=minor1_str.replace(func,"ft.arb."+func)
     minor2_str=minor2_str.replace(func,"ft.arb."+func)
   fil.write("for B in ftboxes: \n")
-  fil.write("   m1.append("+ minor1_str + ") \n")
-  fil.write("   m2.append("+ minor2_str + ") \n")  
+  fil.write("   m1.append(ft.arb("+ minor1_str + ")) \n")
+  fil.write("   m2.append( ft.arb("+ minor2_str + ")) \n")  
   fil.write("innrer_loops=[i for i in range(m) if 0 in m1[i] and 0 in m2[i] ]\n")
   fil.write("print(innrer_loops)\n")
   fil.close()
-  t=os.popen("python3 evaluation_file.py ").read()
+  t=os.popen("python3 evaluation_file1.py ").read()
   return t
 def boxes_classifier(system,boxes,X,special_function=[]):
   if len(boxes[0])==0:
@@ -605,28 +618,29 @@ def projection_checker(solutions):
     for j in range(i+1,len(solutions)):
       """pprint(sp.Matrix(solutions[i]))
       pprint(sp.Matrix(solutions[j]));"""
-      if d.boxes_intersection(solutions[i][:2],solutions[j][:2]) !=[] and \
-      d.boxes_intersection(solutions[i][n:2*n-2],[[-Bi[1],-Bi[0]] for Bi in solutions[j][n:2*n-2]]) ==[] and \
-       d.boxes_intersection(solutions[i][2:n], solutions[j][2:n]) ==[] : 
+      if d.boxes_intersection(solutions[i][:2],solutions[j][:2]) !=[] and (\
+      d.boxes_intersection(solutions[i][n:2*n-2],[[-Bi[1],-Bi[0]] for Bi in solutions[j][n:2*n-2]]) ==[] or \
+       d.boxes_intersection(solutions[i][2:n]+[solutions[i][2*n-2]], solutions[j][2:n]+[solutions[j][2*n-2]]) ==[]) : 
         intersect_in2d[i] = intersect_in2d[i]+[ j]
       """print(d.boxes_intersection(solutions[i][:2],solutions[j][:2]) !=[] and \
       d.boxes_intersection(solutions[i][n:2*n-2],[[-Bi[1],-Bi[0]] for Bi in solutions[j][n:2*n-2]]) ==[] and \
        d.boxes_intersection(solutions[i][2:n], solutions[j][2:n]) ==[] );input() """
+
   accepted=[]
   acc_ind=[]
   unaccepted=[]
   unacc_ind=[]
   for i in range(len(solutions)):
 
-    if len(intersect_in2d[i]) ==0 and i not in unacc_ind:
+    if len(intersect_in2d[i]) ==0 and i not in unacc_ind+acc_ind:
       accepted.append(solutions[i])
-
+      acc_ind.append(i)
       continue
-    unaccepted.append(solutions[i])
-    unacc_ind.append(i)
+    elif  i not in unacc_ind+acc_ind:
+      unaccepted.append(solutions[i])
+      unacc_ind.append(i)
     for k in intersect_in2d[i]:
-     if k not in unacc_ind:
-       
+     if k not in unacc_ind:  
        unaccepted.append(solutions[k]) 
        unacc_ind.append(k)  
   return [accepted, unaccepted] 		
@@ -653,6 +667,52 @@ def all_pairs_oflist(L):
     for j in range(i+1,len(L)):
       pairs.append([L[i],L[j]])
   return pairs    
+def checking_assumptions(curve_data): #the input of this function is the output of Ball_solver
+  if len(curve_data[0][1]) !=0 :
+    return 0
+  Ball_sols_ft=[[d.ftconstructor(Bi[0],Bi[1]) for Bi in B] for B in  curve_data[1][0]]+[[d.ftconstructor(Bi[0],Bi[1]) for Bi in B] for B in  curve_data[1][1]]
+  alph3=assum_alph3_checker(Ball_sols_ft)
+  if alph3==1 :
+    return 1
+  else:
+    return 0
+def csv_saver(L,type_L="Ball"):
+  dic=[]
+  if type_L== "Ball" :
+    n=int((len(L[0])+1)/2)
+    for j in range(len(L)):
+       dic.append({})
+       for i in range(n):
+         dic[j]["x"+str(i+1)]=L[j][i]
+       for i in range(n,2*n-2):
+          dic[j]["r"+str(i+3-n)]=L[j][i]
+       dic[j]["t"]= L[j][2*n-2]
+  return dic     
+def dict2csv(dictlist, csvfile):
+    """
+    Takes a list of dictionaries as input and outputs a CSV file.
+    """
+    f = open(csvfile, 'wb')
+
+    fieldnames = dictlist[0].keys()
+
+    csvwriter = csv.DictWriter(f, delimiter=',', fieldnames=fieldnames)
+    csvwriter.writerow(dict((fn, fn) for fn in fieldnames))
+    for row in dictlist:
+        csvwriter.writerow(row)
+    fn.close()          
+def assum_alph3_checker(solutions):
+  comparing_list=[[]]*len(solutions)
+  for i in range(len(solutions)-1):
+    for j in range(i+1,len(solutions)):
+      if d.boxes_intersection(solutions[i][:2],solutions[j][:2]) !=[]:
+        comparing_list[i].append(j)
+        comparing_list[j].append(i)
+  matching=[len(T) for T in comparing_list]
+  if max(matching) <=2:
+    return 1
+  else:
+    return 0
 def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ball  On the case where tow monotonic boxes intersect
   n=len(B);
   P=[Pi.replace("\n","") for Pi in  open(system,"r").readlines()]
@@ -665,11 +725,23 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
   #######################################################################
   monotonic_pairs=intersect_in_2D(classes[0],classes[0])
   monotonic_componants=[ Bi[0] for Bi in  monotonic_pairs ] +[ Bi[1] for Bi in  monotonic_pairs ]
-  """checked_boxes=[]
-  for potential_node in monotonic_pairs:
-    if potential_node[0] in checked_boxes and potential_node[1] in checked_boxes:
-      continue"""
-  plane_components= planner_connected_compnants(monotonic_componants)
+  #Guillaume's suggestion:
+  mon_mid=[[0.5*(Bij[1]+Bij[0]) for Bij in Bi[:2] ] for Bi in classes[0] ]
+  mon_rad=[ max([0.5*(Bij[1]-Bij[0]) for Bij in Bi[:2] ]) for Bi in classes[0] ]
+  tree = spatial.KDTree(mon_mid)
+  interesting_boxes=[tree.query_ball_point(m,r=(2*math.sqrt(2))*r) for m,r in zip(mon_mid,mon_rad)] 
+  #Ask Guillaume why this step is needed: 
+  """for i in range(len(ball)):  
+    for j in ball[i]:
+      if i not in ball[j]:
+         ball[j].append(i)"""  
+  interesting_boxes=[indi for indi in interesting_boxes if len(indi) >3 and len(connected_compnants([classes[0][i] for i in indi])) >1 ]
+  interesting_boxes_flattened =[]
+  for Box_ind in interesting_boxes :
+       for j in Box_ind:
+        if j not in interesting_boxes_flattened:
+          interesting_boxes_flattened.append(j)      #use a flattening  function in numpy     
+  plane_components= planner_connected_compnants([classes[0][i] for i in interesting_boxes_flattened ])
   H=[]
   for plane_component in plane_components:  
         x1=float(min([ai[0][0] for ai in plane_component]))
@@ -685,16 +757,34 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
             uni = d.box_union(uni,box)
           t=estimating_t(pair_branches)
           r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr(pair_branches)]
-          B_Ball=[[x1,x2],[y1,y2]] +r +[t]   
+          B_Ball=[[x1,x2],[y1,y2]] +r +[t] 
+          H.append(B_Ball)  
+          #print(B_Ball[:3])
           Ball_generating_system(P,B_Ball,X)
+          
           os.system("ibexsolve   --eps-max="+ str(eps)+" -s  eq.txt  > output.txt")
           Solutions=computing_boxes()
-          if Solutions != "Empty":
+          if Solutions != "Empty" and Solutions != [[],[]] :
             cer_Solutions += Solutions[0]
             uncer_Solutions += Solutions[1]
+            #if len(uncer_Solutions)!=0:
+             
+             #input("hi")
           if Solutions==[[],[]] :
-              uncer_Solutions.append(B_Ball)  
-      
+              if d.width(B_Ball) > eps:
+                #new_B=d.box_union(d.F_Ballminus(B_Ball),d.F_Ballplus(B_Ball))
+                new_B=B_Ball[:2]+B[2:n]
+                new_boxes=enclosing_curve(system,new_B,X,eps=0.1*eps)
+                
+                resul=enclosing_singularities(system,new_boxes,new_B,X,eps=0.1*eps)
+
+                cer_Solutions+= resul[0]+resul[1] 
+                uncer_Solutions += resul[2]
+                boxes[1] += new_boxes[1]
+              else:  
+                uncer_Solutions.append(B_Ball)
+   
+            
     #There still the case B1B2[0],B1B2[1] are not disjoint 
   ########################################################################################################
   #Solving Ball for potential_cusp, a box in  R^n such that C is not monotonic 
@@ -721,11 +811,12 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
     B_Ball=uni +[[-1.01,1.01]]*(n-2)+[t]
     H.append(B_Ball)
     sol=cusp_Ball_solver(P,B_Ball,X)
-    if sol != "Empty":
+    if sol != "Empty" and sol != [[],[]]:
          cer_Solutions += sol[0]
          uncer_Solutions += sol[1]
-    elif Solutions == [[],[]]:
-              uncer_Solutions.append(B_Ball)     
+    if sol == [[],[]]:
+              uncer_Solutions.append(B_Ball) 
+          
     ####finding nodes that have the same projection with potential_cusp
     non_intersecting_boxes= [pair_i[1] for pair_i in plane_intersecting_boxes \
      if  d.boxes_intersection(pair_i[1], potential_cusp)==[] ] 
@@ -762,41 +853,23 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
       cups_or_smallnodes.append(solution)
     else:
       nodes.append(solution) 
+
   return [nodes,cups_or_smallnodes, uncer_Solutions ]    
-def assum_alph3_checker(solutions):
-	comparing_list=[[]]*len(solutions)
-	for i in range(len(solutions)-1):
-		for j in range(i+1,len(solutions)):
-			if d.boxes_intersection(solutions[i][:2],solutions[j][:2]) !=[]:
-				comparing_list[i].append(j)
-				comparing_list[j].append(i)
-	matching=[len(T) for T in comparing_list]
-	if max(matching) <=2:
-		return 1
-	else:
-		return 0
-def checking_assumptions(curve_data): #the input of this function is the output of Ball_solver
-	if len(curve_data[0][1]) !=0 :
-		return 0
-	Ball_sols_ft=[[d.ftconstructor(Bi[0],Bi[1]) for Bi in B] for B in  curve_data[1][0]]+[[d.ftconstructor(Bi[0],Bi[1]) for Bi in B] for B in  curve_data[1][1]]
-	alph3=assum_alph3_checker(Ball_sols_ft)
-	if alph3==1 :
-		return 1
-	else:
-		return 0
+"""
 System="system.txt" 
-#Box=[[-5, 15], [-15, 15],[-3.14,3.14],[-3.14,3.14]]
-#Box=[[-1.2,1.2],[-1.3,1.5],[-4.2,2]]
-Box=[[-1.2,1.2],[-1.5,1.5],[-4.2,2]]
+Box=[[-5, 15], [-15, 15],[-3.14,3.14],[-3.14,3.14]]
+Box=[[-1.21,4.13],[-1.23,5.13],[-2,2]]
 X=[sp.Symbol("x"+str(i)) for i in range(1,4)]
 boxes =enclosing_curve(System,Box,X,eps=0.1)
 
+
 nodes, cups_or_smallnodes,uncer_Solutions=enclosing_singularities(System,boxes,Box,X)
+
 #plotting the singularities
-ploting_boxes(boxes[0],boxes[1] , nodes = nodes, cusps= cups_or_smallnodes,uncer_Solutions=uncer_Solutions )
+ploting_boxes(boxes[0],boxes[1] , nodes = nodes,x=0.05, cusps= cups_or_smallnodes,uncer_Solutions=uncer_Solutions )
 ##################################
 #Declaring parameters #######
-##################################
+##################################"""
 """System="system.txt" 
 Box=[[-5,15],[-15,15],[-3.14,3.14],[-3.14,3.14]]
 X=[sp.Symbol("x"+str(i)) for i in range(1,5)]

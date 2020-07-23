@@ -149,14 +149,14 @@ def evaluation_exp(expr,B,X):
     f.write("from sympy import * \n")
     f.write("from numpy import * \n")
     f.write("import operator \n")
-    f.write("def eval_func(): \n")
+    f.write("def eval_func(expr,B): \n")
     for i in range(n):
      f.write(" x"+str(i+1)+"=Symbol(\""+ str(X[i])+"\"  )\n")
     for i in range(n,len(X)-1):
         f.write(" r"+str(i-n+3)+"=Symbol(\""+ str(X[i])+"\"  )\n")
     f.write(" t"+"=Symbol(\""+ str(X[len(X)-1])+"\"  )\n")
-    f.write(" B="+str(B)+"\n")
-    f.write(" f=srepr( parse_expr ( \"  " +str(expr)+ "  \") ) \n")
+    #f.write(" B="+str(B)+"\n")
+    f.write(" f=srepr( parse_expr ("  +"expr"+  ") ) \n")
     f.write(" B_f=[ d.ftconstructor(Bi[0],Bi[1]) for Bi in B ]  \n"    )
     for i in range(len(X)):
         f.write(" f=f.replace(\"Symbol(\'"+str(X[i])+\
@@ -171,8 +171,7 @@ def evaluation_exp(expr,B,X):
     f.write(" return eval(f) \n")
     f.close() 
     #from  evaluation_file import  eval_func
-    eval_func()
-    answer=ft.arb(eval_func())
+    answer=ft.arb(eval_func(expr,B))
 
     return [float(answer.lower()),float(answer.upper())]
 def Cauchy_form_poly(P,X):
@@ -197,25 +196,26 @@ def Cauchy_form_poly(P,X):
 def Ball_cusp_gen(equations,B_Ball,X):
     n=len(X)
     DP=Cauchy_form_poly(equations,X)
-    
     t=sp.Symbol("t")
     coeff_t2= [ DPi.coeff(t**2)  for DPi in DP]
     eval_coefft2=[]
     D_list=[]
     X_Ball=X+[sp.Symbol("r"+str(i+1)) for i in range(2,n)]+[t]
     ###Adding the remainder ##################
+    
     for i  in range(len(DP)):
+        #print("poly",DP[i]);input()
         coeff_t2=DP[i].coeff(t**2)
+        #print("coeff",coeff_t2);input()
         ev=evaluation_exp(str(coeff_t2),B_Ball,X_Ball)
         eval_coefft2.append(ev)
         DP[i] -= coeff_t2 *t**2
-
         ci=sp.Symbol("c"+str(i+1))
         DP[i]=sp.simplify(DP[i])+0.5*ci *t**2  
-
     V=""" Constants \n """
     for i in range(len(DP)):
         V+="c"+str(i+1)+" in " + str(eval_coefft2[i])+" ; \n"
+
     V +=""" Variables \n """
     for i in range(n):
         V += "x" +str(i+1) + " in " + str(B_Ball[i]) +" ; \n"
@@ -239,7 +239,8 @@ def Ball_cusp_gen(equations,B_Ball,X):
     f= open("eq.txt","w+") 
     f.write(V) 
     f.write("end")
-    f.close()   
+    f.close() 
+
 def computing_boxes():
   if "infeasible" in open("output.txt","r").read():
     return "Empty"
@@ -281,12 +282,6 @@ def cusp_Ball_solver(P,B,X):
     return computing_boxes()
 
     return T
-
-P1="x1 -(cos(x3)*(3+sin(x3)^4))"
-P2="x2- (sin(x3)^2*(3+sin(8*x3)))"
-P=[P1,P2]
-
-B=[[-3.1,3.1],[-1,6.1],[-3.14,3.14],[-1.01,1.01]]
 
 #generating_system(P,B)
 #print(ibex_output(P,B))

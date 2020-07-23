@@ -4,14 +4,13 @@ from sympy.parsing.sympy_parser import parse_expr
 from sympy import * 
 from numpy import * 
 import operator 
-def eval_func(): 
+def eval_func(expr,B): 
  x1=Symbol("x1"  )
  x2=Symbol("x2"  )
  x3=Symbol("x3"  )
  r3=Symbol("r3"  )
  t=Symbol("t"  )
- B=[[-6.083995460204328e-11, 0.026809919128123295], [-2.9197298772880607e-06, 0.00011768978201867575], [-0.07817511551534775, 0.16373734839739262], [-1.01, 1.01], [-2.0560990410256608e-11, 0.014630410173952398]]
- f=srepr( parse_expr ( "  -1.0*r3**5  ") ) 
+ f=srepr( parse_expr (expr) ) 
  B_f=[ d.ftconstructor(Bi[0],Bi[1]) for Bi in B ]  
  f=f.replace("Symbol('x1')", " B_f[ 0] ")  
  f=f.replace("Symbol('x2')", " B_f[ 1] ")  

@@ -257,8 +257,12 @@ def matrixval(jac,X): #jac as i_minor and X is a list of ft.arb
                      evaluation_jac_X[i][j]=ft.arb(0)
          return evaluation_jac_X
 def width(B):
-    maximal=max([float(Bi.rad()) for Bi in B])
-    return maximal
+    if type(B[0])==type(ft.arb(1)):
+     maximal=max([float(Bi.rad()) for Bi in B])
+     return maximal
+    if type(B[0])==type([]):
+     B_ft=[ftconstructor(Bi[0],Bi[1]) for Bi in B]
+     return width(B_ft) 
 def checking_full_rank(M): #checks whether a list of lists of arb is full rank
             minors=[i_minor(M,t) for t in range(len(M[0]))]
             full_rank=0
@@ -1105,22 +1109,31 @@ def sqrt_t(I):
   else:
        return ftconstructor(math.sqrt(float(I.lower())),math.sqrt(float(I.upper())))
 def F_Ballplus(U):    # len(U) is odd
+ if type(U[0])==type(ft.arb(1)): 
   n=int((len(U)+1)/2)
-
   Y=U[:n]
   r_times_sqrtt=[yi *sqrt_t(U[2*n-2]) for yi in U[n:2*n-2] ]
   F1=U[:2]
   for i in range(2,n):
       F1.append(Y[i]+r_times_sqrtt[i-2])
   return F1
+ if type(U[0])==type([]):
+   U_ft=[ftconstructor(Ui[0],Ui[1]) for Ui in U]
+   F1=F_Ballplus(U_ft)
+   return [[ float(F1i.lower()),float(F1i.upper()) ] for F1i in  F1]
 def F_Ballminus(U):    # len(U) is odd
-  n=int((len(U)+1)/2)
-  Y=U[:n]
-  r_times_sqrtt=[yi *sqrt_t(U[2*n-2]) for yi in U[n:2*n-2] ]
-  F2=U[:2]
-  for i in range(2,n):
-      F2.append(Y[i]-r_times_sqrtt[i-2])
-  return F2          
+  if type(U[0])==type(ft.arb(1)): 
+    n=int((len(U)+1)/2)
+    Y=U[:n]
+    r_times_sqrtt=[yi *sqrt_t(U[2*n-2]) for yi in U[n:2*n-2] ]
+    F1=U[:2]
+    for i in range(2,n):
+      F1.append(Y[i]-r_times_sqrtt[i-2])
+    return F1
+  if type(U[0])==type([]):
+   U_ft=[ftconstructor(Ui[0],Ui[1]) for Ui in U]
+   F1=F_Ballplus(U_ft)
+   return [[ float(F1i.lower()),float(F1i.upper()) ] for F1i in  F1]        
 
 def Ball_func(func,Jac_func): # func is a function that sends a list of intervals to an internal ....   Jac_func(i) is the pratial dervative of func wrt the i-variable 
    S_func=lambda U: 1/2*(compose(func,F_Ballplus)(U)+compose(func,F_Ballplus)(U))
