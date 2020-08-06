@@ -12,34 +12,41 @@ import matplotlib.patches as mpatches
 import csv
 from scipy import spatial
 import flint as ft
-def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],x=0.1,a=1,b=10,nodes=[], cusps=[],uncer_Solutions=[],cer=[[0,0],0] ):
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
+import itertools
+
+
+def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],x=0.1,nodes=[], cusps=[],uncer_Solutions=[],Legend=False,color="green",variabel_name="x" ):
    fig, ax = plt.subplots()
    #plt.grid(True)
    ax.set_xlim(B[0][0], B[0][1])
    ax.set_ylim(B[1][0], B[1][1])
-   ax.set_xlabel('x'+str(var[0]+1))
-   ax.set_ylabel('x'+str(var[1]+1))
+   ax.set_xlabel(variabel_name+str(1))
+   ax.set_ylabel(variabel_name+str(2))
    """try:
     ax.title(open("system.txt","r").read())
    except:
     pass"""
-   textstr = open("system.txt","r").read()
-   props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-   ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=9,
-        verticalalignment='top', bbox=props)
+   
+   #textstr = open("system.txt","r").read()
+   #props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+   #ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=9,
+   #     verticalalignment='top', bbox=props)
    c=0
-   green_patch = mpatches.Patch(color='green', label='smooth part')
+   green_patch = mpatches.Patch(color=color, label='smooth part') 
    red_patch = mpatches.Patch(color='red', label='unknown part')
    node_patch = mpatches.Patch(color='black', label='Certified nodes',fill=None)
    cusp_patch = mpatches.Patch(color='blue', label='cusps or small nodes',fill=None)
-   plt.legend(handles=[green_patch,red_patch,node_patch,cusp_patch])
+   if Legend==True:
+     plt.legend(handles=[green_patch,red_patch,node_patch,cusp_patch])
    for box in boxes:
      rectangle= plt.Rectangle((box[var[0]][0],box[var[1]][0]) , \
-      a*(box[var[0]][1]-box[var[0]][0]),a*(box[var[1]][1]-box[var[1]][0]),color="green")
+      (box[var[0]][1]-box[var[0]][0]),(box[var[1]][1]-box[var[1]][0]),color=color)
      plt.gca().add_patch(rectangle)
    for box in uncer_boxes:
       rectangle= plt.Rectangle((box[var[0]][0],box[var[1]][0]) , \
-      a*(box[var[0]][1]-box[var[0]][0]),a*(box[var[1]][1]-box[var[1]][0]), fc='r')
+      (box[var[0]][1]-box[var[0]][0]),(box[var[1]][1]-box[var[1]][0]), fc='r')
       plt.gca().add_patch(rectangle)
    for box in nodes:
      rectangle= plt.Rectangle((box[0][0]-x,box[1][0]-x) ,\
@@ -53,8 +60,7 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],x=0.1,a=1,
      rectangle= plt.Rectangle((box[0][0]-x,box[1][0]-x) ,\
       2*x+box[0][1]-box[0][0],2*x+box[1][1]-box[1][0], fc='y',color="red",fill=None)
      plt.gca().add_patch(rectangle)   
-   circle=plt.Circle((cer[0][0], cer[0][1]), cer[1],color="blue", fill=False)
-   ax.add_artist(circle) 
+
    plt.show()
 def Ball_node_gen(equations,B_Ball,X):
     P=open(equations,"r").readlines()
@@ -284,9 +290,8 @@ def planner_connected_compnants(boxes):
         for j in  range(len(components)):
             membership=0
             for k in range(len(components[j])):   
-
-                if d.boxes_intersection(ftboxes[i][:2],components[j][k][:2]) !=[] and \
-                d.boxes_intersection(ftboxes[i],components[j][k]) ==[]:
+                if d.boxes_intersection(ftboxes[i][:2],components[j][k][:2]) !=[]: #and \
+                #d.boxes_intersection(ftboxes[i],components[j][k]) ==[]:
                     components[j].append(ftboxes[i])
                     membership=1
                     boxi_isused=1
@@ -306,8 +311,8 @@ def planner_connected_compnants(boxes):
                 is_looping=True
                 for boxi in components[i]:
                     for boxj in components[j]:
-                        if d.boxes_intersection(boxi,boxj)==[] and \
-                       d.boxes_intersection(boxi[:2],boxj[:2]) != []  :
+                        if d.boxes_intersection(boxi[:2],boxj[:2])!=[]:# and \
+                       #d.boxes_intersection(boxi[:2],boxj[:2]) != []  :
                             is_looping = False
                             intersection_exists=True
                             break
@@ -518,19 +523,22 @@ def enclosing_curve(system,B,X,eps=0.1):
     if ibex_output ==[[],[]] and max([Bi[1]-Bi[0] for Bi in L[0]  ]) < eps*0.01 :  
       uncertified_boxes.append(L[0])
       L.remove(L[0]);
+
     elif ibex_output ==[[],[]] :
       children=plane_subdivision(L[0])
       L.remove(L[0]);
       L += children
+
     elif ibex_output== "Empty":
       L.remove(L[0])
+
     else:
+
       if len(ibex_output[0]) !=0:
        certified_boxes += ibex_output[0]
       if len(ibex_output[1])!=0: 
-       uncertified_boxes += ibex_output[0]
-      L.remove(L[0]) 
-    
+       uncertified_boxes += ibex_output[1]
+      L.remove(L[0])      
   return [certified_boxes,uncertified_boxes]                        
 def loopsfree_checker(f,certified_boxes,uncer_boxes,P): #Assumption: no cusps
 	L=eval_file_gen(f,certified_boxes,X)
@@ -616,15 +624,14 @@ def projection_checker(solutions):
   intersect_in2d=[[]]*len(solutions)
   for i in range(len(solutions)-1):
     for j in range(i+1,len(solutions)):
-      """pprint(sp.Matrix(solutions[i]))
-      pprint(sp.Matrix(solutions[j]));"""
-      if d.boxes_intersection(solutions[i][:2],solutions[j][:2]) !=[] and (\
-      d.boxes_intersection(solutions[i][n:2*n-2],[[-Bi[1],-Bi[0]] for Bi in solutions[j][n:2*n-2]]) ==[] or \
+      if solutions[i]==solutions[j]:
+        continue
+      elif d.boxes_intersection(solutions[i][:2],solutions[j][:2]) !=[] and (\
+      (d.boxes_intersection(solutions[i][n:2*n-2],[[-Bi[1],-Bi[0]] for Bi in solutions[j][n:2*n-2]]) ==[] and \
+      d.boxes_intersection(solutions[i][n:2*n-2],[[Bi[0],Bi[1]] for Bi in solutions[j][n:2*n-2]]) ==[] ) \
+          or \
        d.boxes_intersection(solutions[i][2:n]+[solutions[i][2*n-2]], solutions[j][2:n]+[solutions[j][2*n-2]]) ==[]) : 
         intersect_in2d[i] = intersect_in2d[i]+[ j]
-      """print(d.boxes_intersection(solutions[i][:2],solutions[j][:2]) !=[] and \
-      d.boxes_intersection(solutions[i][n:2*n-2],[[-Bi[1],-Bi[0]] for Bi in solutions[j][n:2*n-2]]) ==[] and \
-       d.boxes_intersection(solutions[i][2:n], solutions[j][2:n]) ==[] );input() """
 
   accepted=[]
   acc_ind=[]
@@ -643,6 +650,7 @@ def projection_checker(solutions):
      if k not in unacc_ind:  
        unaccepted.append(solutions[k]) 
        unacc_ind.append(k)  
+  #pprint(sp.Matrix(unaccepted));input()
   return [accepted, unaccepted] 		
 def Ball_given_2nboxes(system,X, B1,B2, monotonicity_B1=1,monotonicity_B2=1):
   B1_ft=[d.ftconstructor(Bi[0],Bi[1]) for Bi in B1]
@@ -713,7 +721,32 @@ def assum_alph3_checker(solutions):
     return 1
   else:
     return 0
-def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ball  On the case where tow monotonic boxes intersect
+
+def plotting_3D(boxes,Box,var=[0,1,2]):
+  ax = plt.figure().add_subplot(111, projection='3d')
+  ax.set_xlim(Box[0][0], Box[0][1])
+  ax.set_ylim(Box[1][0], Box[1][1])
+  ax.set_zlim(Box[2][0], Box[2][1])
+  ax.set_xlabel("x"+str(var[0]+1))
+  ax.set_ylabel("x"+str(var[1]+1))
+  ax.set_zlabel("x"+str(var[2]+1))
+  for box in boxes : 
+    V=[[box[j][0] for j in range(3)] ,  [box[j][1] for j in range(3)]]
+    #ax.scatter3D(box[0], box[1], box[2])
+    points =list(itertools.product(*box))
+    faces=[[points[0],points[2],points[6],points[4]],
+    [points[0],points[2],points[3],points[1]],
+ [points[0],points[1],points[5],points[4]], 
+ [points[2],points[3],points[7],points[6]], 
+ [points[1],points[3],points[7],points[5]]]
+    ax.add_collection3d(Poly3DCollection(faces, 
+ facecolors='green', linewidths=1,edgecolors='green', alpha=.25))
+    #ax.set_xlabel('X')
+    #ax.set_ylabel('Y')
+    #ax.set_zlabel('Z')
+    #plt.show();input()
+  plt.show()
+def enclosing_singularities(system,boxes,B,X,eps=0.1,eps2=0.01): #there still computing Ball  On the case where tow monotonic boxes intersect
   n=len(B);
   P=[Pi.replace("\n","") for Pi in  open(system,"r").readlines()]
   certified_boxes, uncertified_boxes= boxes
@@ -723,27 +756,44 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
   #############################################################################
   #Solving Ball for B1 and B2 in R^n such that C is monotonic in B1 and B2
   #######################################################################
-  monotonic_pairs=intersect_in_2D(classes[0],classes[0])
-  monotonic_componants=[ Bi[0] for Bi in  monotonic_pairs ] +[ Bi[1] for Bi in  monotonic_pairs ]
+  #monotonic_pairs=intersect_in_2D(classes[0],classes[0])
+  #monotonic_componants=[ Bi[0] for Bi in  monotonic_pairs ] +[ Bi[1] for Bi in  monotonic_pairs ]
   #Guillaume's suggestion:
   mon_mid=[[0.5*(Bij[1]+Bij[0]) for Bij in Bi[:2] ] for Bi in classes[0] ]
   mon_rad=[ max([0.5*(Bij[1]-Bij[0]) for Bij in Bi[:2] ]) for Bi in classes[0] ]
   tree = spatial.KDTree(mon_mid)
-  interesting_boxes=[tree.query_ball_point(m,r=(2*math.sqrt(2))*r) for m,r in zip(mon_mid,mon_rad)] 
-  #Ask Guillaume why this step is needed: 
+  intersting_boxes=[tree.query_ball_point(m,r=(2*math.sqrt(2))*r) for m,r in zip(mon_mid,mon_rad)] 
+  #Ask Guillaume why this step is needed:
   """for i in range(len(ball)):  
     for j in ball[i]:
       if i not in ball[j]:
          ball[j].append(i)"""  
-  interesting_boxes=[indi for indi in interesting_boxes if len(indi) >3 and len(connected_compnants([classes[0][i] for i in indi])) >1 ]
+  intersting_boxes=[indi for indi in intersting_boxes if len(indi) >3 and len(connected_compnants([classes[0][i] for i in indi])) >1 ]
+  discarded_components=[]
+  for i in range(len(intersting_boxes)-1):
+    for_i_stop=0
+    boxi_set=set(intersting_boxes[i])
+    for j in range(i+1,len(intersting_boxes)):
+      boxj_set=set(intersting_boxes[j])
+      if boxj_set.issubset(boxi_set):
+        discarded_components.append(j)
+      elif  boxi_set < boxj_set:
+        discarded_components.append(i)
+  intersting_boxes=[intersting_boxes[i] for i in range(len(intersting_boxes)) \
+  if i not in discarded_components] 
   interesting_boxes_flattened =[]
-  for Box_ind in interesting_boxes :
+  for Box_ind in intersting_boxes :
        for j in Box_ind:
         if j not in interesting_boxes_flattened:
-          interesting_boxes_flattened.append(j)      #use a flattening  function in numpy     
+          interesting_boxes_flattened.append(j)      #use a flattening  function in numpy    
+
+
   plane_components= planner_connected_compnants([classes[0][i] for i in interesting_boxes_flattened ])
+ 
   H=[]
+
   for plane_component in plane_components:  
+      if len(plane_component)>1:
         x1=float(min([ai[0][0] for ai in plane_component]))
         x2=float(max([ai[0][1] for ai in plane_component]))
         y1=float(min([ai[1][0] for ai in plane_component]))
@@ -761,22 +811,18 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
           H.append(B_Ball)  
           #print(B_Ball[:3])
           Ball_generating_system(P,B_Ball,X)
-          
           os.system("ibexsolve   --eps-max="+ str(eps)+" -s  eq.txt  > output.txt")
           Solutions=computing_boxes()
           if Solutions != "Empty" and Solutions != [[],[]] :
             cer_Solutions += Solutions[0]
             uncer_Solutions += Solutions[1]
-            #if len(uncer_Solutions)!=0:
-             
-             #input("hi")
           if Solutions==[[],[]] :
-              if d.width(B_Ball) > eps:
+              if d.width(B_Ball[:2]) > eps2:
                 #new_B=d.box_union(d.F_Ballminus(B_Ball),d.F_Ballplus(B_Ball))
                 new_B=B_Ball[:2]+B[2:n]
                 new_boxes=enclosing_curve(system,new_B,X,eps=0.1*eps)
-                
                 resul=enclosing_singularities(system,new_boxes,new_B,X,eps=0.1*eps)
+                
 
                 cer_Solutions+= resul[0]+resul[1] 
                 uncer_Solutions += resul[2]
@@ -784,7 +830,7 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
               else:  
                 uncer_Solutions.append(B_Ball)
    
-            
+           
     #There still the case B1B2[0],B1B2[1] are not disjoint 
   ########################################################################################################
   #Solving Ball for potential_cusp, a box in  R^n such that C is not monotonic 
@@ -845,6 +891,7 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
               uncer_Solutions.append(B_Ball)                  
   nodes=[]
   cups_or_smallnodes=[]
+
   checker=projection_checker(cer_Solutions)
   uncer_Solutions= uncer_Solutions +checker[1]
   cer_Solutions=[Bi for Bi in checker[0] if Bi[2*n-2][1] >= 0   ] 
@@ -855,21 +902,27 @@ def enclosing_singularities(system,boxes,B,X,eps=0.1): #there still computing Ba
       nodes.append(solution) 
 
   return [nodes,cups_or_smallnodes, uncer_Solutions ]    
-"""
+
 System="system.txt" 
-Box=[[-5, 15], [-15, 15],[-3.14,3.14],[-3.14,3.14]]
-Box=[[-1.21,4.13],[-1.23,5.13],[-2,2]]
+Box=[[-3.14,3.14],[-3.14,3.14],[-3, 3]]#, [-15, 15]]
+
+Box=[[-1.01,1.03],[-1.03,1.03],[0,3]]
+#Box=[[-15, 15], [-13.2, 13.2],[-3.14,3.14],[-3.14,3.14]]
+#Box=[[0.215,3.219],[0.920,1929],[-16, 16],[-13,13]] #[-12.3, 12.18]]
+#Box=[[-1.21,1.13],[-1.23,1.13],[2.1,8.3]]
 X=[sp.Symbol("x"+str(i)) for i in range(1,4)]
+
 boxes =enclosing_curve(System,Box,X,eps=0.1)
-
-
+plotting_3D(boxes[0],Box);input()
 nodes, cups_or_smallnodes,uncer_Solutions=enclosing_singularities(System,boxes,Box,X)
 
 #plotting the singularities
-ploting_boxes(boxes[0],boxes[1] , nodes = nodes,x=0.05, cusps= cups_or_smallnodes,uncer_Solutions=uncer_Solutions )
+ploting_boxes(boxes[0],boxes[1] ,B=Box[:2], nodes = nodes,x=0.17, cusps= cups_or_smallnodes,uncer_Solutions=uncer_Solutions,color="blue" ,Legend=True)
+
+
 ##################################
 #Declaring parameters #######
-##################################"""
+##################################
 """System="system.txt" 
 Box=[[-5,15],[-15,15],[-3.14,3.14],[-3.14,3.14]]
 X=[sp.Symbol("x"+str(i)) for i in range(1,5)]
