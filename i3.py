@@ -84,8 +84,9 @@ def Ball_node_gen(equations,B_Ball,X):
     V += "t" + " in " + str(B_Ball[2*n-2]) +" ; \n"       
     V +="Constraints \n"   
     for Pi in P:
-        V += SDP_str(Pi,X)[0]
-        V += SDP_str(Pi,X)[1]
+        t1=time.time();H=SDP_str(Pi,X);print(time.time()-t1)
+        V += H[0]
+        V += H[1]
     last_eq=""
     for i in range(3,n):
         last_eq += "r"+str(i)+"^2+"
@@ -139,8 +140,8 @@ def SDP_str(P,X):
     for i in range(2,n):
         P_pluse=P_pluse.replace("x"+str(i+1),"(x"+str(i+1) + "+ r"+str(i+1) +"*sqrt(t))")
         P_minus=P_minus.replace("x"+str(i+1),"(x"+str(i+1) + "- r"+str(i+1) +"*sqrt(t))")
-    SP= "0.5*(" + P_pluse + "+" +P_minus+")=0; \n"
-    DP= "0.5*(" + P_pluse + "- (" +P_minus+") )/(sqrt(t))=0; \n"
+    SP= str(sp.simplify("0.5*(" + P_pluse + "+" +P_minus+") \n")); SP=(SP+"=0; \n").replace("**","^")
+    DP=str(sp.simplify("0.5*(" + P_pluse + "- (" +P_minus+") )/(sqrt(t)) \n")); DP=(DP+"=0; \n").replace("**","^")
     return [SP,DP]
 def Ball_generating_system(P,B_Ball,X,eps_min=0.001):
     n=len(X)
@@ -155,15 +156,7 @@ def Ball_generating_system(P,B_Ball,X,eps_min=0.001):
     V += "t" + " in " + str(B_Ball[2*n-2]) +" ; \n"       
     V +="Constraints \n"   
     for Pi in P:
-        V += SDP_str(Pi,X)[0]
-        V += SDP_str(Pi,X)[1]
-
-    last_eq=""
-    for i in range(3,n):
-        last_eq += "r"+str(i)+"^2+"
-    last_eq += "r" +str(n)+"^2 -1=0;"    
-
-    V += last_eq +"\n"
+        V +=Pi
 
     f= open("eq.txt","w+")
     f.write(V) 
@@ -560,7 +553,7 @@ def enclosing_curve(system,B,X,eps_min=0.1,eps_max=0.1):
        uncertified_boxes += ibex_output[1]
       L.remove(L[0])  
   if len(certified_boxes) ==0:
-    return [[],uncertified_boxes,0]       
+    return [[],uncertified_boxes,tree_size]       
   return [certified_boxes,uncertified_boxes,tree_size]                        
 def loopsfree_checker(f,certified_boxes,uncer_boxes,P): #Assumption: no cusps
   L=eval_file_gen(f,certified_boxes,X)
@@ -636,8 +629,7 @@ def boxes_classifier(system,boxes,X,special_function=[]):
       [certified_boxes[i]  for i in range(len(certified_boxes)) if i in L[2]], uncer_boxes ] #can be enhanced
 def projection_checker(solutions):
   if len(solutions)==0:
-    return [[],[]]
-  print(len(solutions))  
+    return [[],[]] 
   m=len(solutions[0])
   n=int((m+1)/2)
   rep=[]
@@ -651,10 +643,7 @@ def projection_checker(solutions):
         if i not in unaccepted:
           unaccepted.append(i)
         if j not in unaccepted:
-          unaccepted.append(j)  
-  print(rep)
-  print(unaccepted)   
-  print(len(solutions))     
+          unaccepted.append(j)     
   #intersect_in2d[i] = intersect_in2d[i]+[ j]
   """elif d.boxes_intersection(solutions[i][:2],solutions[j][:2]) !=[] and (\
       (d.boxes_intersection(solutions[i][n:2*n-2],[[-Bi[1],-Bi[0]] for Bi in solutions[j][n:2*n-2]]) ==[] and \
@@ -788,6 +777,21 @@ def enclosing_singularities(system,boxes,B,X,eps_max=0.1,eps_min=0.01, threshold
   tree_size_ball=0
   n=len(B);
   P=[Pi.replace("\n","") for Pi in  open(system,"r").readlines()]
+  ##### Computing Ball for nodes 
+  Ball_P=[]
+  for Pi in P:
+    H=SDP_str(Pi,X)
+    Ball_P.append(H[0])
+    Ball_P.append(H[1])
+  last_eq=""
+  for i in range(3,n):
+        last_eq += "r"+str(i)+"^2+"
+  last_eq += "r" +str(n)+"^2 -1=0; \n"
+  Ball_P.append(last_eq)
+  
+
+
+
   certified_boxes, uncertified_boxes,tree_size_curve= boxes
   time_ball=[] 
   time_combinatorics=[] 
@@ -846,17 +850,13 @@ def enclosing_singularities(system,boxes,B,X,eps_max=0.1,eps_min=0.01, threshold
         #nighboured_boxes0[i].append( mon_boxes[j])
         #print(L0.index(i),L0.index(j))
         #print(graph0[L0.index(i)]);input()
-        graph1[L1.index(i),L1.index(j)]=1
-
-        
+        graph1[L1.index(i),L1.index(j)]=1     
    graph1 = csr_matrix(graph1)
    n_components1, labels1 = connected_components(csgraph=graph1, directed=False, return_labels=True)
    comp_class_1=empty_lists = [ [] for i in range(n_components1) ]
    for i in range(len(L1)):
-    #print(comp_class_0)
     comp_class_1[labels1[i]].append(mon_boxes[L1[i]])
-    #print(comp_class_0);input()
-    #ploting_boxes(boxes[0],comp_class_0[0]);input()  
+
 
    Lcc=Lcc+ comp_class_1 
   print("Lcc",len(Lcc))
@@ -872,7 +872,6 @@ def enclosing_singularities(system,boxes,B,X,eps_max=0.1,eps_min=0.01, threshold
           interesting_boxes_flattened.append(j)  #use a flattening  function in numpy"""
   t2=time.time() 
   print("Comb", t2-t1)
-  print(len(Lcc))  
     
   #############################################################################
   #Computing intersting_boxes= {box in boxes[0] with box has at least three neighbors  in 2D}#
@@ -885,8 +884,7 @@ def enclosing_singularities(system,boxes,B,X,eps_max=0.1,eps_min=0.01, threshold
   
   com_end=time.time()
   time_combinatorics.append(com_end-com_start)"""
-  #print("Kd", t2-t1)
-  #print("cc",t3-t2)
+
   ###############################################################################################################################
   #For every two distinct connected components of Lcc, we check if they intersect in 2D, if so we compute the ball system ans solve it  #
   ################################################################################################################################ 
@@ -900,18 +898,17 @@ def enclosing_singularities(system,boxes,B,X,eps_max=0.1,eps_min=0.01, threshold
         ####################################################################
         ##Now we discuss several cases depending on how far  0 from t is#####
         #################################################################### 
-        
-
         uni=[]
         for box in Lcc[c1_index]+Lcc[c2_index] :
             uni = d.box_union(uni,box)
         t=estimating_t([Lcc[c1_index],Lcc[c2_index]]); t1 = d.ftconstructor(t[0],t[1]); t=[float(t1.lower()),float(t1.upper())];
         # t is a away from 0
         if t[0]> threshold:
+           
            r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr([Lcc[c1_index],Lcc[c2_index]])]
            B_Ball=uni[:2] +r[:] +[t] 
            B_Ball= check_for_pre(B_Ball)
-           Ball_generating_system(P,B_Ball,X,eps_min)
+           Ball_generating_system(Ball_P,B_Ball,X,eps_min)
            os.system("ibexsolve   --eps-max="+ str(eps_max)+"  --eps-min="+ str(eps_min) + " -s  eq.txt  > output.txt")
            ibex_output=computing_boxes()
            Sol=ibex_output[:2]
@@ -919,20 +916,22 @@ def enclosing_singularities(system,boxes,B,X,eps_max=0.1,eps_min=0.01, threshold
            if Sol[0] != "Empty" and Sol != [[],[]] :
             Solutions[0]=Solutions[0]+Sol[0] 
             Solutions[1]=Solutions[1]+Sol[1]
-           elif Sol == [[],[]]   and d.width(uni) > eps_min:
-                new_B=B_Ball[:2]+B[2:n]
+           elif Sol == [[],[]]   and d.width(uni[:2]) > eps_min:
+                new_B=uni
                 res=enclosing_curve(system,new_B,X,eps_max=0.1*eps_max, eps_min=eps_min)
-                new_boxes=res[:2]
-                resul=enclosing_singularities(system,new_boxes,new_B,X,eps_max=eps_max,eps_min=eps_min)
+                resul=enclosing_singularities(system,res,new_B,X,eps_max=eps_max,eps_min=eps_min)
                 Solutions[0] += resul[0]+resul[1] 
                 Solutions[1] += resul[2]
-                boxes[1] += new_boxes[1]
+                boxes[1] += res[1]
                 tree_size_ball += resul[3]
                 tree_size_curve +=resul[4]
-           elif   Sol == [[],[]]   and d.width(uni) <= eps_min:   
+           elif   Sol == [[],[]]   and d.width(uni[:2]) <= eps_min:   
                 Solutions[1].append(B_Ball)
+
+
         # t contains 0  
         elif  t[0] <= 0<= t[1]   :
+          
           t1=[t[0],threshold]
           B_Ball=uni[:] +[[-1-eps_min,+1+eps_min]]*(n-2) +[t1]
           B_Ball= check_for_pre(B_Ball) 
@@ -942,23 +941,25 @@ def enclosing_singularities(system,boxes,B,X,eps_max=0.1,eps_min=0.01, threshold
           if Sol[0] != "Empty" and Sol !=[[],[]]:
             Solutions[0]=Solutions[0]+Sol[0] 
             Solutions[1]=Solutions[1]+Sol[1] 
-          elif Sol == [[],[]]   and d.width(uni) > eps_min:
-                new_B=B_Ball[:2]+B[2:n]
+          elif Sol == [[],[]]   and d.width(uni[:2]) > eps_min:
+                
+                new_B=B_Ball[:n]
                 res=enclosing_curve(system,new_B,X,eps_max=0.1*eps_max, eps_min=eps_min)
-                new_boxes=res[:2]
-                resul=enclosing_singularities(system,new_boxes,new_B,X,eps_max=eps_max,eps_min=eps_min)
+                resul=enclosing_singularities(system,res,new_B,X,eps_max=eps_max,eps_min=eps_min)
                 Solutions[0] += resul[0]+resul[1] 
                 Solutions[1] += resul[2]
-                boxes[1] += new_boxes[1]
+                boxes[1] += res[1]
                 tree_size_ball += resul[3]
                 tree_size_curve +=resul[4]
           elif   Sol == [[],[]]   and d.width(uni) <= eps_min:   
                 Solutions[1].append(B_Ball)
-          if t[0] > threshold:
+
+          if t[1] > threshold:
+           
            t2=[threshold,t[1]]
            r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr([Lcc[c1_index],Lcc[c2_index]])]
            B_Ball=uni[:2] +r[:n-2]+[[-1-eps_min,+1+eps_min]]*(n-2) +[t2] 
-           Ball_generating_system(P,B_Ball,X,eps_min)
+           Ball_generating_system(Ball_P,B_Ball,X,eps_min)
            os.system("ibexsolve   --eps-max="+ str(eps_max)+"  --eps-min="+ str(eps_min) + " -s  eq.txt  > output.txt")
            #input("hi")
            res=computing_boxes()
@@ -967,17 +968,17 @@ def enclosing_singularities(system,boxes,B,X,eps_max=0.1,eps_min=0.01, threshold
            if Sol[0] != "Empty" and Sol !=[[],[]]:
             Solutions[0]=Solutions[0]+Sol[0] 
             Solutions[1]=Solutions[1]+Sol[1]
-           elif Sol == [[],[]]   and d.width(uni) > eps_min:
-                new_B=B_Ball[:2]+B[2:n]
+           elif Sol == [[],[]]   and d.width(uni[:2]) > eps_min:
+                
+                new_B=uni
                 res=enclosing_curve(system,new_B,X,eps_max=0.1*eps_max, eps_min=eps_min)
-                new_boxes=res[:2]
-                resul=enclosing_singularities(system,new_boxes,new_B,X,eps_max=eps_max,eps_min=eps_min)
+                resul=enclosing_singularities(system,res,new_B,X,eps_max=eps_max,eps_min=eps_min)
                 Solutions[0] += resul[0]+resul[1] 
                 Solutions[1] += resul[2]
-                boxes[1] += new_boxes[1]
+                boxes[1] += res[1]
                 tree_size_ball += resul[3]
                 tree_size_curve +=resul[4]
-           elif   Sol == [[],[]]   and d.width(uni) <= eps_min:   
+           elif   Sol == [[],[]]   and d.width(uni[:2]) <= eps_min:   
                 Solutions[1].append(B_Ball)       
       
         # t does not contain 0   but close enough       
@@ -992,17 +993,16 @@ def enclosing_singularities(system,boxes,B,X,eps_max=0.1,eps_min=0.01, threshold
           if Sol[0] != "Empty" and Sol !=[[],[]]:
             Solutions[0]=Solutions[0]+Sol[0] 
             Solutions[1]=Solutions[1]+Sol[1] 
-          elif Sol == [[],[]]   and d.width(uni) > eps_min:
-                new_B=B_Ball[:2]+B[2:n]
+          elif Sol == [[],[]]   and d.width(uni[:2]) > eps_min:
+                new_B=uni
                 res=enclosing_curve(system,new_B,X,eps_max=0.1*eps_max, eps_min=eps_min)
-                new_boxes=res[:2]
-                resul=enclosing_singularities(system,new_boxes,new_B,X,eps_max=eps_max,eps_min=eps_min)
+                resul=enclosing_singularities(system,res,new_B,X,eps_max=eps_max,eps_min=eps_min)
                 Solutions[0] += resul[0]+resul[1] 
                 Solutions[1] += resul[2]
-                boxes[1] += new_boxes[1]
+                boxes[1] += res[1]
                 tree_size_ball += resul[3]
                 tree_size_curve +=resul[4]
-          elif   Sol == [[],[]]   and d.width(uni) <= eps_min:   
+          elif   Sol == [[],[]]   and d.width(uni[:2]) <= eps_min:   
                 Solutions[1].append(B_Ball)  
         
         # if the width of t is larger than threshold, we detect whether there is a small nodes 
@@ -1031,8 +1031,8 @@ def enclosing_singularities(system,boxes,B,X,eps_max=0.1,eps_min=0.01, threshold
   return [nodes,Sols_with_0in_t, Solutions[1], tree_size_ball, tree_size_curve]    
 
 
-"""
-System="system.txt" 
+
+System="exp3.txt" 
 Box = [[-2, 2] , [-4, 4.5] , [-0.2, 43.9],[-0.2, 43.9]]
 Box = [[-1, 4], [-1, 4],[-4.8, -1.4]] #exp1
 #Box=[[0.65,0.85],[-0.3,0.1],[-0.2, 45]]#, [-4.8,-1.4]] 
@@ -1041,12 +1041,12 @@ Box=[[-2, 2], [-4, 4.5] , [-0.2, 43.9]]#exp2
 
 Box=[[1.4177, 1.4184],[1, 2.0008] , [0, 2],[0, 2]]
 Box=[[-1, 0], [-0.1, 3.5] , [-20, 20],[-10, 10]]  #exp3 new
-Box=[[-1.7, 3.7], [-2, 2.1], [-10, 10],[-10, 10]] #randome 3
+"""Box=[[-1.7, 3.7], [-2, 2.1], [-10, 10],[-10, 10]] #randome 3
 #Box=[[1, 1.5],[1.15, 1.35], [-10, 10],[-10, 10]]
 Box=[[-1.5,1.5]]*2+[[-10,10]]*2 
 Box=[[-1.5,1],[-1,1.5]]+[[-10,10]]*2 
 Box=[[-1,0.2],[-0.2,1.4]]+[[-10,10]]*2
-#Box=[[-0.06,-0.04],[-0.005,0.006]]+[[-10,10]]*2
+#Box=[[-0.06,-0.04],[-0.005,0.006]]+[[-10,10]]*2"""
 
 
 
@@ -1057,13 +1057,13 @@ Box=[[-1,0.2],[-0.2,1.4]]+[[-10,10]]*2
 X=[sp.Symbol("x"+str(i)) for i in range(1,5)]
 start_enc=time.time()
 
-boxes =enclosing_curve(System,Box,X,eps_max=0.1,eps_min=0.000000001)
+boxes =enclosing_curve(System,Box,X,eps_max=0.01,eps_min=0.000000001)
 end_enc=time.time()
 
 print("enclosing curve time", end_enc-start_enc )
-ploting_boxes(boxes[0],boxes[1], B=Box );input()
+#ploting_boxes(boxes[0],boxes[1], B=Box );input()
 
-nodes,Sols_with_0in_t,uncer_Solutions,tree_size_ball,tree_size_curve=enclosing_singularities(System,boxes,Box,X,eps_max=0.1,eps_min=0.00001,threshold=0)
+nodes,Sols_with_0in_t,uncer_Solutions,tree_size_ball,tree_size_curve=enclosing_singularities(System,boxes,Box,X,eps_max=0.1,eps_min=0.00001,threshold=0.00000000000000001)
 print("tree_size_curve: ",tree_size_curve )
 print()
 print("certified and uncertified enclosing boxes: "  , len(boxes[0]),len(boxes[1]))
@@ -1076,7 +1076,7 @@ for i in range(len(nodes)-1):
       print(nodes[i][:2]); input()
 ploting_boxes(boxes[0],boxes[1] ,B=Box[:2], nodes = nodes,x=0.013, cusps= Sols_with_0in_t,uncer_Solutions=uncer_Solutions)
 
-
+"""
 System="system.txt" 
 Box=[[-5, 15], [-15, 15],[-3.14,3.14],[-3.14,3.14]]
 Box=[[-1.21,4.13],[-1.23,5.13],[-2,2]]
