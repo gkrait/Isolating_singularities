@@ -354,7 +354,14 @@ def boxes_intersection(B1,B2):
     B2_ft=[ftconstructor(Bi[0],Bi[1]) for Bi in B2]
     intersec= boxes_intersection(B1_ft,B2_ft)
     return [[float(Bi.lower()),float(Bi.upper())] for Bi in intersec]
-    
+ 
+def components_intersection(c1,c2,com=2): 
+  for b1 in c1:
+    for b2 in c2:
+      if boxes_intersection(b1[:com],b2[:com]) !=[]:
+        return True
+  return False      
+
 
 def intersection_of_bounded_with_unbounded_interval(x,boundary,infty): #returns the intersection of x with [boundary, infty] where infty= 1 or -1  is corresponding to + infty or -infty respectevly
                  Intersection=x
@@ -878,13 +885,17 @@ def B_Ball_calculator(B):   # returns B_Ball
 
 def box_union(B1,B2):
     the_union=[]
+    
     if B1==[]:
       return B2
+    if B2==[]:
+     return B1
+    #print(B1);input() 
     if type(B1[0])==type(ft.arb(1)):
       for i in range(len(B1)) :
             the_union.append(B1[i].union(B2[i]))
       return the_union
-    elif  type(B1[0])==type([]): 
+    if  type(B1[0])==type([1]): 
       B1_ft=[ftconstructor(Bi[0],Bi[1]) for Bi in B1]
       B2_ft=[ftconstructor(Bi[0],Bi[1]) for Bi in B2]
       uni= box_union(B1_ft,B2_ft)

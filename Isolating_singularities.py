@@ -3,11 +3,13 @@ import matplotlib.pyplot as plt
 import os
 import pickle 
 import interval_arithmetic as d
+
 from pprint import pprint
 from sympy.parsing.sympy_parser import parse_expr
 import sympy as sp 
 import os 
-from cusp import cusp_Ball_solver, evaluation_exp
+from tcusp import cusp_Ball_solver, evaluation_exp
+
 import matplotlib.patches as mpatches
 import csv
 from scipy import spatial
@@ -15,6 +17,14 @@ import flint as ft
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
 import itertools
+import timeit
+import time
+import numpy as np
+from evaluation_file1 import evlist
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import connected_components
+
+
 
 
 def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],x=0.1,nodes=[], cusps=[],uncer_Solutions=[],Legend=False,color="green",variabel_name="x" ):
@@ -37,7 +47,7 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],x=0.1,node
    green_patch = mpatches.Patch(color=color, label='smooth part') 
    red_patch = mpatches.Patch(color='red', label='unknown part')
    node_patch = mpatches.Patch(color='black', label='Certified nodes',fill=None)
-   cusp_patch = mpatches.Patch(color='blue', label='cusps or small nodes',fill=None)
+   cusp_patch = mpatches.Patch(color='blue', label='Projection of certified solution with t=0 ',fill=None)
    if Legend==True:
      plt.legend(handles=[green_patch,red_patch,node_patch,cusp_patch])
    for box in boxes:
@@ -45,6 +55,7 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],x=0.1,node
       (box[var[0]][1]-box[var[0]][0]),(box[var[1]][1]-box[var[1]][0]),color=color)
      plt.gca().add_patch(rectangle)
    for box in uncer_boxes:
+
       rectangle= plt.Rectangle((box[var[0]][0],box[var[1]][0]) , \
       (box[var[0]][1]-box[var[0]][0]),(box[var[1]][1]-box[var[1]][0]), fc='r')
       plt.gca().add_patch(rectangle)
@@ -60,7 +71,7 @@ def ploting_boxes(boxes,uncer_boxes, var=[0,1], B=[[-20,20],[-20,20]],x=0.1,node
      rectangle= plt.Rectangle((box[0][0]-x,box[1][0]-x) ,\
       2*x+box[0][1]-box[0][0],2*x+box[1][1]-box[1][0], fc='y',color="red",fill=None)
      plt.gca().add_patch(rectangle)   
-
+   plt.savefig("fig.jpg",dpi=1000) 
    plt.show()
 def Ball_node_gen(equations,B_Ball,X):
     P=open(equations,"r").readlines()
@@ -74,8 +85,9 @@ def Ball_node_gen(equations,B_Ball,X):
     V += "t" + " in " + str(B_Ball[2*n-2]) +" ; \n"       
     V +="Constraints \n"   
     for Pi in P:
-        V += SDP_str(Pi,X)[0]
-        V += SDP_str(Pi,X)[1]
+        t1=time.time();H=SDP_str(Pi,X);print(time.time()-t1)
+        V += H[0]
+        V += H[1]
     last_eq=""
     for i in range(3,n):
         last_eq += "r"+str(i)+"^2+"
@@ -86,71 +98,71 @@ def Ball_node_gen(equations,B_Ball,X):
     f.write("end")
     f.close() 
 def Ball_solver(equations,B_Ball,X):     #the width condition needs to be added  Do not suse this one 
-	L=[B_Ball]
-	certified_boxes=[]
-	uncertified_boxes=[]
-	n=len(X)
-	while len(L) !=0: 
-		solvability=1
-		if B_Ball[2*n-2][0] <= 0 <=   B_Ball[2*n-2][1] and \
-		d.width([ d.ftconstructor(Bi[0],Bi[1]) for Bi in L[0] ] ) <0.1 :
-			Ball_cusp_gen(equations,B_Ball,X)
-		elif (B_Ball[2*n-2][0] > 0 or 0 >   B_Ball[2*n-2][1] ) \
-		and d.width([ d.ftconstructor(Bi[0],Bi[1]) for Bi in L[0] ] ) <0.1:
-			Ball_node_gen(equations,B_Ball,X)
-		else:
-			children=cb.plane_subdivision(L[0])
-			L.remove(L[0])
-			L += children
-			solvability=0
-		if solvability==1:
-			ibex_output=cb.solving_with_ibex()
-			if ibex_output[0]== "Empty":
-		    
-			  L.remove(L[0])
-			elif len(ibex_output[0]) !=0:  
-		    
-			   certified_boxes +=cb.computing_boxes(ibex_output[0])
-			   L.remove(L[0])
-			elif len(ibex_output[1])!=0:   
-		    
-			  uncertified_boxes +=cb.computing_boxes(ibex_output[1])
-			  L.remove(L[0])
-			else:  
-			  children=cb.plane_subdivision(L[0])
-			  L.remove(L[0])
-			  L += children
-		
-	return [certified_boxes,uncertified_boxes]		  
+  L=[B_Ball]
+  certified_boxes=[]
+  uncertified_boxes=[]
+  n=len(X)
+  while len(L) !=0: 
+    solvability=1
+    if B_Ball[2*n-2][0] <= 0 <=   B_Ball[2*n-2][1] and \
+    d.width([ d.ftconstructor(Bi[0],Bi[1]) for Bi in L[0] ] ) <0.1 :
+      Ball_cusp_gen(equations,B_Ball,X,eps_min=eps_min,eps_max=eps_max)
+    elif (B_Ball[2*n-2][0] > 0 or 0 >   B_Ball[2*n-2][1] ) \
+    and d.width([ d.ftconstructor(Bi[0],Bi[1]) for Bi in L[0] ] ) <0.1:
+      Ball_node_gen(equations,B_Ball,X)
+    else:
+      children=cb.plane_subdivision(L[0])
+      L.remove(L[0])
+      L += children
+      solvability=0
+    if solvability==1:
+      ibex_output=cb.solving_with_ibex()
+      if ibex_output[0]== "Empty":
+        
+        L.remove(L[0])
+      elif len(ibex_output[0]) !=0:  
+        
+         certified_boxes +=cb.computing_boxes(ibex_output[0])
+         L.remove(L[0])
+      elif len(ibex_output[1])!=0:   
+        
+        uncertified_boxes +=cb.computing_boxes(ibex_output[1])
+        L.remove(L[0])
+      else:  
+        children=cb.plane_subdivision(L[0])
+        L.remove(L[0])
+        L += children
+    
+  return [certified_boxes,uncertified_boxes]      
 def SDP_str(P,X):
     n=len(X)
-    P_pluse=P[:]
-    P_minus=P[:]
+    P_pluse=P
+    P_minus=P
     for i in range(2,n):
         P_pluse=P_pluse.replace("x"+str(i+1),"(x"+str(i+1) + "+ r"+str(i+1) +"*sqrt(t))")
         P_minus=P_minus.replace("x"+str(i+1),"(x"+str(i+1) + "- r"+str(i+1) +"*sqrt(t))")
-    SP= "0.5*(" + P_pluse + "+" +P_minus+")=0; \n"
-    DP= "0.5*(" + P_pluse + "- (" +P_minus+") )/(sqrt(t))=0; \n"
+    
+    if parse_expr(P.replace("^","**")).is_polynomial():
+     SP= str(sp.simplify(sp.expand("0.5*(" + P_pluse + "+" +P_minus+") \n"))); SP=(SP+"=0; \n").replace("**","^")
+     DP=str(sp.simplify(sp.expand("0.5*(" + P_pluse + "- (" +P_minus+") )/(sqrt(t)) \n"))); DP=(DP+"=0; \n").replace("**","^")
+    else:
+     SP= ("0.5*(" + P_pluse + "+" +P_minus+")  =0; \n").replace("**","^")
+     DP= ("(" + P_pluse + "- (" +P_minus+")) =0;  \n").replace("**","^")
     return [SP,DP]
-def Ball_generating_system(P,B_Ball,X):
+def Ball_generating_system(P,B_Ball,X,eps_min=0.001):
     n=len(X)
     V=""" Variables \n """
     for i in range(n):
-        V += "x" +str(i+1) + " in " + str(B_Ball[i]) +" ; \n"
+        if B_Ball[i][0] != B_Ball[i][1]:
+         V += "x" +str(i+1) + " in " + str(B_Ball[i]) +" ; \n"
+        else: 
+         V += "x" +str(i+1) + " in " + str([B_Ball[i][0]-eps_min, B_Ball[i][1]+eps_min]) +" ; \n"
     for i in range(n,2*n-2):
         V += "r" +str(i-n+3) + " in " + str(B_Ball[i]) +" ; \n" 
     V += "t" + " in " + str(B_Ball[2*n-2]) +" ; \n"       
     V +="Constraints \n"   
     for Pi in P:
-        V += SDP_str(Pi,X)[0]
-        V += SDP_str(Pi,X)[1]
-
-    last_eq=""
-    for i in range(3,n):
-        last_eq += "r"+str(i)+"^2+"
-    last_eq += "r" +str(n)+"^2 -1=0;"    
-
-    V += last_eq +"\n"
+        V +=Pi
 
     f= open("eq.txt","w+")
     f.write(V) 
@@ -205,17 +217,24 @@ def estimating_t1(components,upper_bound=200000):  #it works only if len(compone
   t=0.25*d.power_interval(t,2)     
 
   return [float(t.lower()),float(t.upper())]     
-def estimating_t(components,upper_bound=19000.8):  #it works only if len(components)==2
-  t1=upper_bound
-  t2=0
+def estimating_t(components):  #it works only if len(components)==2
+  uni=d.distance(components[0][0],components[1][0])
+  
   for box1 in components[0]:
     for box2 in components[1]:
+        #print(uni);input()
+        if d.width(box1[2:])< 1e-6:
+          box1[2:]=[[Bi[0] - 1e-6, Bi[1]+1e-6 ]  for Bi in   box1[2:]]
+        if d.width(box2[2:])< 1e-6:
+          box2[2:]=[[Bi[0] - 1e-6, Bi[1]+1e-6 ]  for Bi in   box2[2:]]  
         a=d.distance(box1[2:],box2[2:])
-        if t1 > a[0]:
+        #print(a);input()
+        uni=d.box_union([uni],[a])[0]
+        """if t1 > a[0]:
           t1=a[0]
         if t2<a[1]:
-           t2=a[1]  
-  t=d.ftconstructor(t1,t2)
+           t2=a[1]"""  
+  t=d.ftconstructor(uni[0],uni[1])
   t=0.25*d.power_interval(t,2) 
   return [float(t.lower()),float(t.upper())] 
 
@@ -244,7 +263,7 @@ def connected_compnants(boxes):
         for j in  range(len(components)):
             membership=0
             for k in range(len(components[j])):   
-                if d.boxes_intersection(ftboxes[i],components[j][k]) !=[]:
+                if d.boxes_intersection(ftboxes[i],components[j][k]) !=[] :
                     components[j].append(ftboxes[i])
                     membership=1
                     boxi_isused=1
@@ -290,7 +309,7 @@ def planner_connected_compnants(boxes):
         for j in  range(len(components)):
             membership=0
             for k in range(len(components[j])):   
-                if d.boxes_intersection(ftboxes[i][:2],components[j][k][:2]) !=[]: #and \
+                if d.boxes_intersection(ftboxes[i][:2],components[j][k][:2]) !=[]: # and \
                 #d.boxes_intersection(ftboxes[i],components[j][k]) ==[]:
                     components[j].append(ftboxes[i])
                     membership=1
@@ -311,8 +330,8 @@ def planner_connected_compnants(boxes):
                 is_looping=True
                 for boxi in components[i]:
                     for boxj in components[j]:
-                        if d.boxes_intersection(boxi[:2],boxj[:2])!=[]:# and \
-                       #d.boxes_intersection(boxi[:2],boxj[:2]) != []  :
+                        if d.boxes_intersection(boxi[:2],boxj[:2])!=[] :#and \
+                        #d.boxes_intersection(boxi[:2],boxj[:2]) != []  :
                             is_looping = False
                             intersection_exists=True
                             break
@@ -323,12 +342,8 @@ def planner_connected_compnants(boxes):
                     unused.remove(j)
             components2=components1[:]
             components1=[components[k] for k in unused ]                    
-    return components1                   
-
-
-
-
-    return components      
+    
+    return components1                        
 def estimating_yandr(components,upper_bound=100000):
   r_bounds=[[upper_bound,0]]*(len(components[0][0])-2)
   r_list=[]
@@ -354,7 +369,8 @@ def estimating_yandr(components,upper_bound=100000):
   for i in range(len(r_list[0])):
         ri1=min([float(r[i].lower()) for r in r_list  ])
         ri2=max([float(r[i].upper()) for r in r_list  ])
-        r.append([ri1,ri2])    
+        r.append([ri1,ri2])
+  r=d.boxes_intersection(r,[[-1,1]]*(len(components[0][0])-2))          
 
   return y+r       
 def detecting_nodes(boxes,B,f,X,eps): #boxes are list of cer and uncer curve
@@ -369,7 +385,7 @@ def detecting_nodes(boxes,B,f,X,eps): #boxes are list of cer and uncer curve
             Mariam=[[float(Bi.lower()),float(Bi.upper()) ] for Bi in Mariam_ft]
             if (Mariam ==[] and \
              d.boxes_intersection(ftboxes[i][1][:2],ftboxes[j][1][:2])) or\
-               (Mariam != [] and enclosing_curve(f,Mariam,X,eps*0.1) ==[[],[]] ): #needs to work more
+               (Mariam != [] and enclosing_curve(f,Mariam,X,eps_max=0.1) ==[[],[]] ): #needs to work more
                 if i not in used:
                     used.append(i)
                     nodes_lifting.append(ftboxes[i])
@@ -438,13 +454,13 @@ def solving_fornodes(equations,boxes,B,X,eps=0.1):
         Ball_solutions +=solutionsi
     return Ball_solutions
 def normal_subdivision(B):
-	ft_B=d.subdivide([d.ftconstructor(Bi[0],Bi[1]) for Bi in B[:]])
-	return [d.ft_normal(Bi)  for Bi in ft_B]
+  ft_B=d.subdivide([d.ftconstructor(Bi[0],Bi[1]) for Bi in B[:]])
+  return [d.ft_normal(Bi)  for Bi in ft_B]
 def plane_subdivision(B):
-	
-	ft_B2=d.subdivide([d.ftconstructor(Bi[0],Bi[1]) for Bi in B[:2]])
-	normal_B2=[d.ft_normal(Bi)  for Bi in ft_B2]
-	return d.cartesian_product(normal_B2,[B[2:]])
+  
+  ft_B2=d.subdivide([d.ftconstructor(Bi[0],Bi[1]) for Bi in B[:2]])
+  normal_B2=[d.ft_normal(Bi)  for Bi in ft_B2]
+  return d.cartesian_product(normal_B2,[B[2:]])
 def system_generator(f,B,X):
     g = open(f, "r")
     L = g.readlines()
@@ -461,24 +477,30 @@ def system_generator(f,B,X):
 
     return f
 def solving_with_ibex(eps=0.1):
-	uncer_content=[]
-	cer_content=[]
-	os.system("ibexsolve   --eps-max="+ str(eps) +" -s  eq.txt  > output.txt")
-	g=open('output.txt','r')
-	result=g.read()
-	with open('output.txt') as f:
-		if "successful" in result:
-			cer_content = f.readlines()
-		elif  "infeasible" not in result and "done! but some boxes" in result:
-			uncer_content = f.readlines()
-		elif "infeasible problem" in result:
-			uncer_content="Empty"
-			cer_content="Empty"
-	return [cer_content,uncer_content]			
+  uncer_content=[]
+  cer_content=[]
+  os.system("ibexsolve   --eps-max="+ str(eps) +" -s  eq.txt  > output.txt")
+  g=open('output.txt','r')
+  result=g.read()
+  with open('output.txt') as f:
+    if "successful" in result:
+      cer_content = f.readlines()
+    elif  "infeasible" not in result and "done! but some boxes" in result:
+      uncer_content = f.readlines()
+    elif "infeasible problem" in result:
+      uncer_content="Empty"
+      cer_content="Empty"
+  return [cer_content,uncer_content]      
 def computing_boxes():
-  if "infeasible" in open("output.txt","r").read():
-    return "Empty"
   content=open("output.txt","r").readlines()
+  for line in content[:]:
+    if "number of cells" in line:
+      
+      tree_size= 2*int(line.split()[3])+1 #to compute tree size
+      
+      break
+  if "infeasible" in open("output.txt","r").read():
+    return ["Empty","Empty",tree_size]
   cer=[]; uncer=[]
   i=0
   Answer=[]
@@ -509,53 +531,65 @@ def computing_boxes():
         uncer.append(E)
     except ValueError:
           pass 
-  return [cer,uncer]        
-def enclosing_curve(system,B,X,eps=0.1): 
+  if len(cer)==0:
+    return [[],uncer,0] 
+  return [cer,uncer,tree_size]        
+def enclosing_curve(system,B,X,eps_min=0.1,eps_max=0.1, info=False): 
+  start_enc=time.time()
+  tree_size=0
   L=[B]
   certified_boxes=[]
   uncertified_boxes=[]
   while len(L) !=0: 
     system_generator(system,L[0],X)
+    os.system("ibexsolve   --eps-max="+ str(eps_max)+"  --eps-min="+ str(eps_min) + " -s  eq.txt  > output.txt")
     content=open("output.txt","r").readlines()
-    os.system("ibexsolve   --eps-max=" + str(eps) +"  -s  eq.txt  > output.txt")
-    ibex_output=computing_boxes()
-    #ibex_output=solving_with_ibex(eps)
-    if ibex_output ==[[],[]] and max([Bi[1]-Bi[0] for Bi in L[0]  ]) < eps*0.01 :  
+    res=computing_boxes()
+
+    ibex_output=res[:2]
+    tree_size += res[2]
+    if ibex_output ==[[],[]] and max([Bi[1]-Bi[0] for Bi in L[0]  ]) < eps_min :  
       uncertified_boxes.append(L[0])
       L.remove(L[0]);
-
     elif ibex_output ==[[],[]] :
-      children=plane_subdivision(L[0])
+      children=normal_subdivision(L[0]) 
+      #children=plane_subdivision(L[0])
       L.remove(L[0]);
-      L += children
+      L += children  # print warning ################################################################""
+      print("warning!")
+      tree_size +=1
 
-    elif ibex_output== "Empty":
+    elif ibex_output[1]== "Empty":
       L.remove(L[0])
-
     else:
 
       if len(ibex_output[0]) !=0:
        certified_boxes += ibex_output[0]
       if len(ibex_output[1])!=0: 
        uncertified_boxes += ibex_output[1]
-      L.remove(L[0])      
-  return [certified_boxes,uncertified_boxes]                        
+      L.remove(L[0])  
+  if len(certified_boxes) ==0:
+    return [[],uncertified_boxes,tree_size]   
+  end_enc=time.time()
+  if info==True:
+    print("Timing of enclosing curve ", end_enc-start_enc )      
+  return [certified_boxes,uncertified_boxes,tree_size]                        
 def loopsfree_checker(f,certified_boxes,uncer_boxes,P): #Assumption: no cusps
-	L=eval_file_gen(f,certified_boxes,X)
-	while L.replace('\n',"") != "[]":
-		L=L.replace('[','')
-		L=L.replace(']','')
-		L=L.replace('\n','')
-		L=L.split(",")
-		for i in L:
-			children=normal_subdivision(certified_boxes[int(i)])
-			certified_boxes.remove(certified_boxes[int(i)])
-			for child in children:
-				cer_children, uncer_children= enclosing_curve(f,child,X)
-				certified_boxes +=cer_children
-				uncer_boxes +=uncer_children
-		L =  eval_file_gen(f,certified_boxes,X)
-	return L	   
+  L=eval_file_gen(f,certified_boxes,X)
+  while L.replace('\n',"") != "[]":
+    L=L.replace('[','')
+    L=L.replace(']','')
+    L=L.replace('\n','')
+    L=L.split(",")
+    for i in L:
+      children=normal_subdivision(certified_boxes[int(i)])
+      certified_boxes.remove(certified_boxes[int(i)])
+      for child in children:
+        cer_children, uncer_children= enclosing_curve(f,child,X)
+        certified_boxes +=cer_children
+        uncer_boxes +=uncer_children
+    L =  eval_file_gen(f,certified_boxes,X)
+  return L     
 def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is even
   functions=["sin","cos","tan","exp"]+special_function
   if len(boxes[0])==0:
@@ -575,12 +609,13 @@ def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is e
   fil.write("import flint as ft \n")
   fil.write("import sympy as sp \n")
   fil.write("import interval_arithmetic as d \n")
-  fil.write("boxes="+str(boxes)+"\n")
-  fil.write("ftboxes=[ [d.ftconstructor(Bi[0],Bi[1]) for Bi in B ] for B in boxes ] \n"    )
-  fil.write("n=len(boxes[0])\n")
-  fil.write("m=len(boxes)\n")
-  fil.write("m1=[]\n")
-  fil.write("m2=[]\n")
+  fil.write("def  evlist(boxes): \n")
+  #fil.write("boxes="+str(boxes)+"\n")
+  fil.write(" ftboxes=[ [d.ftconstructor(Bi[0],Bi[1]) for Bi in B ] for B in boxes ] \n"    )
+  fil.write(" n=len(boxes[0])\n")
+  fil.write(" m=len(boxes)\n")
+  fil.write(" m1=[]\n")
+  fil.write(" m2=[]\n")
   minor1_str=str(minor1)
   minor2_str=str(minor2)
   for i in range(n):
@@ -589,69 +624,71 @@ def eval_file_gen(f,boxes,X,special_function=[]): #condition: len(boxes[0]) is e
   for func in functions:
     minor1_str=minor1_str.replace(func,"ft.arb."+func)
     minor2_str=minor2_str.replace(func,"ft.arb."+func)
-  fil.write("for B in ftboxes: \n")
+  fil.write(" for B in ftboxes: \n")
   fil.write("   m1.append(ft.arb("+ minor1_str + ")) \n")
   fil.write("   m2.append( ft.arb("+ minor2_str + ")) \n")  
-  fil.write("innrer_loops=[i for i in range(m) if 0 in m1[i] and 0 in m2[i] ]\n")
-  fil.write("print(innrer_loops)\n")
+  fil.write(" innrer_loops=[i for i in range(m) if 0 in m1[i] and 0 in m2[i] ]\n")
+  fil.write(" x1mon=[i for i in range(m) if 0  not in m1[i] ]\n")
+  fil.write(" x2mon=[i for i in range(m) if 0 in m1[i] and 0 not in m2[i] ]\n")
+  fil.write(" return [x1mon,x2mon , innrer_loops] \n")
   fil.close()
-  t=os.popen("python3 evaluation_file1.py ").read()
-  return t
+  
+  #t=os.popen("python3 evaluation_file1.py ").read()
+  return evlist(boxes)
 def boxes_classifier(system,boxes,X,special_function=[]):
   if len(boxes[0])==0:
     return [[],[],boxes[1]]
-  certified_boxes ,uncer_boxes =boxes
+  certified_boxes ,uncer_boxes, tree_size =boxes
   L=eval_file_gen(system,certified_boxes,X)
-  if L==[]:
-    return [[],[],uncer_boxes]
-  it=0
-  L=L.replace('[','')
-  L=L.replace(']','')
-  L=L.replace('\n','')
-  L=L.split(",")
-  if L !=[""]:
-    L=[int(li) for li in L]
-    return   [ [certified_boxes[i]  for i in range(len(certified_boxes)) if i not in L] ,\
-    [certified_boxes[i]  for i in L ], \
-    uncer_boxes ]
+  if L==[[],[],[]]:
+    return [[],[],[],uncer_boxes]
   else:
-      return  [ [certified_boxes[i]  for i in range(len(certified_boxes)) if i not in L] ,[], uncer_boxes ] #can be enhanced
+      return  [ [certified_boxes[i]  for i in range(len(certified_boxes)) if i in L[0]] ,\
+      [certified_boxes[i]  for i in range(len(certified_boxes)) if i in L[1]],\
+      [certified_boxes[i]  for i in range(len(certified_boxes)) if i in L[2]], uncer_boxes ] #can be enhanced
 def projection_checker(solutions):
   if len(solutions)==0:
-    return [[],[]]
+    return [[],[]] 
   m=len(solutions[0])
   n=int((m+1)/2)
-  intersect_in2d=[[]]*len(solutions)
+  rep=[]
+  unaccepted=[]
+  intersect_in2d=[[] for i in range(len(solutions))]
   for i in range(len(solutions)-1):
     for j in range(i+1,len(solutions)):
-      if solutions[i]==solutions[j]:
-        continue
-      elif d.boxes_intersection(solutions[i][:2],solutions[j][:2]) !=[] and (\
+      if d.boxes_intersection(solutions[i],solutions[j]) != [] or d.boxes_intersection(solutions[i],solutions[j][:n]+[ [-Bi[1],-Bi[0]] for Bi in  solutions[j][n:m-1]]+[solutions[j][m-1]]) != [] :
+        rep.append(j)
+      elif   d.boxes_intersection(solutions[i][:2],solutions[j][:2]) != []:
+        if i not in unaccepted:
+          unaccepted.append(i)
+        if j not in unaccepted:
+          unaccepted.append(j)     
+  #intersect_in2d[i] = intersect_in2d[i]+[ j]
+  """elif d.boxes_intersection(solutions[i][:2],solutions[j][:2]) !=[] and (\
       (d.boxes_intersection(solutions[i][n:2*n-2],[[-Bi[1],-Bi[0]] for Bi in solutions[j][n:2*n-2]]) ==[] and \
       d.boxes_intersection(solutions[i][n:2*n-2],[[Bi[0],Bi[1]] for Bi in solutions[j][n:2*n-2]]) ==[] ) \
           or \
        d.boxes_intersection(solutions[i][2:n]+[solutions[i][2*n-2]], solutions[j][2:n]+[solutions[j][2*n-2]]) ==[]) : 
-        intersect_in2d[i] = intersect_in2d[i]+[ j]
+        intersect_in2d[i] = intersect_in2d[i]+[ j]"""
 
-  accepted=[]
+  
+  """accepted=[]
   acc_ind=[]
   unaccepted=[]
   unacc_ind=[]
   for i in range(len(solutions)):
-
-    if len(intersect_in2d[i]) ==0 and i not in unacc_ind+acc_ind:
+    if len(intersect_in2d[i]) ==0 and i not in unacc_ind+acc_ind+rep:
       accepted.append(solutions[i])
       acc_ind.append(i)
       continue
-    elif  i not in unacc_ind+acc_ind:
+    elif  i not in unacc_ind+acc_ind+rep:
       unaccepted.append(solutions[i])
       unacc_ind.append(i)
     for k in intersect_in2d[i]:
      if k not in unacc_ind:  
        unaccepted.append(solutions[k]) 
-       unacc_ind.append(k)  
-  #pprint(sp.Matrix(unaccepted));input()
-  return [accepted, unaccepted] 		
+       unacc_ind.append(k)   """        
+  return [[ solutions[i]  for i in range(len(solutions)) if i not in rep + unaccepted ], [ solutions[i]  for i in range(len(solutions)) if i  in unaccepted ]]     
 def Ball_given_2nboxes(system,X, B1,B2, monotonicity_B1=1,monotonicity_B2=1):
   B1_ft=[d.ftconstructor(Bi[0],Bi[1]) for Bi in B1]
   B2_ft=[d.ftconstructor(Bi[0],Bi[1]) for Bi in B2]
@@ -698,7 +735,7 @@ def csv_saver(L,type_L="Ball"):
   return dic     
 def dict2csv(dictlist, csvfile):
     """
-    Takes a list of dictionaries as input and outputs a CSV file.
+    Takes a list of dictionaries as inpu and outputs a CSV file.
     """
     f = open(csvfile, 'wb')
 
@@ -741,195 +778,345 @@ def plotting_3D(boxes,Box,var=[0,1,2]):
  [points[1],points[3],points[7],points[5]]]
     ax.add_collection3d(Poly3DCollection(faces, 
  facecolors='green', linewidths=1,edgecolors='green', alpha=.25))
-    #ax.set_xlabel('X')
-    #ax.set_ylabel('Y')
-    #ax.set_zlabel('Z')
-    #plt.show();input()
-  plt.show()
-def enclosing_singularities(system,boxes,B,X,eps=0.1,eps2=0.01): #there still computing Ball  On the case where tow monotonic boxes intersect
+  plt.show()  
+def check_for_pre(B,eps=1e-6):
+  for Bi in B:
+    
+    if d.width([Bi])< eps:
+      Bi[0]=Bi[0]-eps
+      Bi[1]=Bi[1]+eps
+  return B    
+
+
+def robot(a,b,c,d,e):
+  
+  P1= "(x1 -" +str(a) +  "*cos(x3))^2 + (x2 -"+ str(a)+ " *sin(x3))^2 - " +str(b**2) 
+  P2="(x1 -(" +str(e)+ ") - (" +str(-d) +  ")*cos(x4))^2 + (x2 - ("+ str(d)+ " )*sin(x4))^2 - " +str(c**2) 
+  jac=sp.Matrix([P1,P2]).jacobian(sp.Matrix(["x1","x2","x3","x4"]))
+  P_ser=sp.simplify( sp.expand(jac[:,2:].det()))
+  P_par=sp.simplify( sp.expand(jac[:,:2].det()))
+  f=open("serial.txt","w")
+  f.write(P1+"\n")
+  f.write(P2+"\n")
+  f.write(str(P_ser).replace("**","^"))
+  f.close()
+
+
+  f=open("parallel.txt","w")
+  f.write(P1+"\n")
+  f.write(P2+"\n")
+  f.write(str(P_par).replace("**","^"))
+  f.close()
+
+
+
+def enclosing_singularities(system,boxes,B,X,eps_max=0.1,eps_min=0.01, threshold=0.01,info=False): #there still computing Ball  On the case where tow monotonic boxes intersect
+  #Defining variables######################################
+  ##########################################################
+  t1=time.time()
+  
+  tree_size_ball=0
   n=len(B);
   P=[Pi.replace("\n","") for Pi in  open(system,"r").readlines()]
-  certified_boxes, uncertified_boxes= boxes
-  classes= boxes_classifier(system,boxes,X,special_function=[])
-  cer_Solutions=[]
-  uncer_Solutions=[]
-  #############################################################################
-  #Solving Ball for B1 and B2 in R^n such that C is monotonic in B1 and B2
-  #######################################################################
-  #monotonic_pairs=intersect_in_2D(classes[0],classes[0])
-  #monotonic_componants=[ Bi[0] for Bi in  monotonic_pairs ] +[ Bi[1] for Bi in  monotonic_pairs ]
-  #Guillaume's suggestion:
-  mon_mid=[[0.5*(Bij[1]+Bij[0]) for Bij in Bi[:2] ] for Bi in classes[0] ]
-  mon_rad=[ max([0.5*(Bij[1]-Bij[0]) for Bij in Bi[:2] ]) for Bi in classes[0] ]
+  is_poly= False not in [ parse_expr(Pi.replace("^","**")).is_polynomial()  for Pi in P ]
+  ##### Computing Ball for nodes 
+  Ball_P=[]
+  for Pi in P:
+    H=SDP_str(Pi,X)
+    Ball_P.append(H[0])
+    Ball_P.append(H[1]) 
+  last_eq=""
+  for i in range(3,n):
+        last_eq += "r"+str(i)+"^2+"
+  last_eq += "r" +str(n)+"^2 -1=0; \n"
+  Ball_P.append(last_eq) 
+  certified_boxes, uncertified_boxes,tree_size_curve= boxes
+  time_ball=[] 
+  time_combinatorics=[] 
+  ## Classifying boxes into x1-monotonous, x2-but-not-x1 monotonous, non-monotonous and non-smooth boxes 
+  #####################################################################################################
+  com_start=time.time()
+  classes= boxes_classifier(system,boxes,X)
+  
+  Lcc=[[ci] for ci in  classes[2]]  #Lcc is tended to be the set of connected components
+  
+  mon_boxes=classes[0]+classes[1]
+  mon_mid=[[0.5*(Bij[1]+Bij[0]) for Bij in Bi[:2] ] for Bi in mon_boxes ]
+  mon_rad=[ 2*d.width(Bi[:2]) for Bi in  mon_boxes ]
   tree = spatial.KDTree(mon_mid)
-  intersting_boxes=[tree.query_ball_point(m,r=(2*math.sqrt(2))*r) for m,r in zip(mon_mid,mon_rad)] 
-  #Ask Guillaume why this step is needed:
-  """for i in range(len(ball)):  
-    for j in ball[i]:
-      if i not in ball[j]:
-         ball[j].append(i)"""  
-  intersting_boxes=[indi for indi in intersting_boxes if len(indi) >3 and len(connected_compnants([classes[0][i] for i in indi])) >1 ]
-  discarded_components=[]
-  for i in range(len(intersting_boxes)-1):
-    for_i_stop=0
-    boxi_set=set(intersting_boxes[i])
-    for j in range(i+1,len(intersting_boxes)):
-      boxj_set=set(intersting_boxes[j])
-      if boxj_set.issubset(boxi_set):
-        discarded_components.append(j)
-      elif  boxi_set < boxj_set:
-        discarded_components.append(i)
-  intersting_boxes=[intersting_boxes[i] for i in range(len(intersting_boxes)) \
-  if i not in discarded_components] 
-  interesting_boxes_flattened =[]
-  for Box_ind in intersting_boxes :
-       for j in Box_ind:
-        if j not in interesting_boxes_flattened:
-          interesting_boxes_flattened.append(j)      #use a flattening  function in numpy    
+  Kdtree_boxes=[tree.query_ball_point(m,r=(math.sqrt(2))*r ) for m,r in zip(mon_mid,mon_rad)] 
+  L=[]
+  for i in range(len(Kdtree_boxes)):
+    if len(Kdtree_boxes[i]) >3:
+      for j in Kdtree_boxes[i]:
+        if j not in L:
+          L.append(j)
 
 
-  plane_components= planner_connected_compnants([classes[0][i] for i in interesting_boxes_flattened ])
- 
-  H=[]
+  L0=[i for i in L if i < len(classes[0])]
+  L1=[i for i in L if i >= len(classes[0])]
 
-  for plane_component in plane_components:  
-      if len(plane_component)>1:
-        x1=float(min([ai[0][0] for ai in plane_component]))
-        x2=float(max([ai[0][1] for ai in plane_component]))
-        y1=float(min([ai[1][0] for ai in plane_component]))
-        y2=float(max([ai[1][1] for ai in plane_component]))
-        components=connected_compnants(plane_component)
-        pairs_of_branches=all_pairs_oflist(components)
-        for pair_branches in  pairs_of_branches:
-          all_boxes=pair_branches[0]+pair_branches[1]
-          uni=[]
-          for box in all_boxes:
-            uni = d.box_union(uni,box)
-          t=estimating_t(pair_branches)
-          r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr(pair_branches)]
-          B_Ball=[[x1,x2],[y1,y2]] +r +[t] 
-          H.append(B_Ball)  
-          #print(B_Ball[:3])
-          Ball_generating_system(P,B_Ball,X)
-          os.system("ibexsolve   --eps-max="+ str(eps)+" -s  eq.txt  > output.txt")
-          Solutions=computing_boxes()
-          if Solutions != "Empty" and Solutions != [[],[]] :
-            cer_Solutions += Solutions[0]
-            uncer_Solutions += Solutions[1]
-          if Solutions==[[],[]] :
-              if d.width(B_Ball[:2]) > eps2:
-                #new_B=d.box_union(d.F_Ballminus(B_Ball),d.F_Ballplus(B_Ball))
-                new_B=B_Ball[:2]+B[2:n]
-                new_boxes=enclosing_curve(system,new_B,X,eps=0.1*eps)
-                resul=enclosing_singularities(system,new_boxes,new_B,X,eps=0.1*eps)
-                
-
-                cer_Solutions+= resul[0]+resul[1] 
-                uncer_Solutions += resul[2]
-                boxes[1] += new_boxes[1]
-              else:  
-                uncer_Solutions.append(B_Ball)
-   
-           
-    #There still the case B1B2[0],B1B2[1] are not disjoint 
-  ########################################################################################################
-  #Solving Ball for potential_cusp, a box in  R^n such that C is not monotonic 
-  ########################################################################################################
-  checked_boxes=[]
-  for potential_cusp in classes[1]:
-    ###finding cusps (or small loops) in potential_cusp####
-    plane_intersecting_boxes= intersect_in_2D([potential_cusp],classes[0]+classes[1]+classes[2],monotonicity=0)
-    intersecting_boxes= [pair_i[1] for pair_i in plane_intersecting_boxes \
-     if  d.boxes_intersection(pair_i[1], potential_cusp)!=[] ]     
-    ##########
-    H=[]
-    uni= potential_cusp[:]
-    checked_boxes.append(potential_cusp)
-    for box in intersecting_boxes:
-     if box in checked_boxes:
-      continue
-     uni = d.box_union(uni,box)
-     checked_boxes.append(box)
-    max_q1q2=d.distance(uni[2:],uni[2:])
-    max_q1q2=d.ftconstructor(max_q1q2[0],max_q1q2[1])
-    t=d.power_interval(max_q1q2,2)/4
-    t=[float(t.lower()),float(t.upper())]
-    B_Ball=uni +[[-1.01,1.01]]*(n-2)+[t]
-    H.append(B_Ball)
-    sol=cusp_Ball_solver(P,B_Ball,X)
-    if sol != "Empty" and sol != [[],[]]:
-         cer_Solutions += sol[0]
-         uncer_Solutions += sol[1]
-    if sol == [[],[]]:
-              uncer_Solutions.append(B_Ball) 
-          
-    ####finding nodes that have the same projection with potential_cusp
-    non_intersecting_boxes= [pair_i[1] for pair_i in plane_intersecting_boxes \
-     if  d.boxes_intersection(pair_i[1], potential_cusp)==[] ] 
+  graph0=np.zeros((len(L0), len(L0)))
+  for i in L0:
     
-    for aligned in non_intersecting_boxes:
-      if aligned  in checked_boxes:
-        continue
-      boxes_intersect_aligned=[B  for B in non_intersecting_boxes if d.boxes_intersection(aligned,B) != []  ]
-      uni=aligned[:]
-      for boxi  in boxes_intersect_aligned:
-          if boxi in checked_boxes:
-            continue
-          uni=d.box_union(uni,boxi)
-          checked_boxes.append(boxi)
-      t=estimating_t([[potential_cusp],[uni]])
-      r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr([[potential_cusp],[uni]])]
-      B_Ball=potential_cusp[:2]+r +[t]  
-      H.append(H)    
-      Ball_generating_system(P,B_Ball,X)
-      os.system("ibexsolve   --eps-max="+ str(eps)+" -s  eq.txt  > output.txt")
-      Solutions=computing_boxes()
-      if Solutions != "Empty":
-          cer_Solutions += Solutions[0]
-          uncer_Solutions += Solutions[1] 
-      elif Solutions == [[],[]]:
-              uncer_Solutions.append(B_Ball)                  
-  nodes=[]
-  cups_or_smallnodes=[]
+    for j in Kdtree_boxes[i]:
+      if   j in L0 and  d.boxes_intersection( mon_boxes[i], mon_boxes[j]) !=[] :
+        graph0[L0.index(i),L0.index(j)]=1
 
-  checker=projection_checker(cer_Solutions)
-  uncer_Solutions= uncer_Solutions +checker[1]
-  cer_Solutions=[Bi for Bi in checker[0] if Bi[2*n-2][1] >= 0   ] 
-  for solution in cer_Solutions :
+        
+  graph0 = csr_matrix(graph0)
+  n_components0, labels0 = connected_components(csgraph=graph0, directed=False, return_labels=True)
+  comp_class_0=empty_lists = [ [] for i in range(n_components0) ]
+  for i in range(len(L0)):
+    comp_class_0[labels0[i]].append(classes[0][L0[i]]) 
+  Lcc=Lcc+ comp_class_0 
+
+
+  if len(classes[1])>0:
+   graph1=np.zeros((len(L1), len(L1)))
+   for i in L1:
+    
+    for j in Kdtree_boxes[i]:
+      if   j in L1 and  d.boxes_intersection( mon_boxes[i], mon_boxes[j]) !=[] :
+        graph1[L1.index(i),L1.index(j)]=1     
+   graph1 = csr_matrix(graph1)
+   n_components1, labels1 = connected_components(csgraph=graph1, directed=False, return_labels=True)
+   comp_class_1=empty_lists = [ [] for i in range(n_components1) ]
+   for i in range(len(L1)):
+    comp_class_1[labels1[i]].append(mon_boxes[L1[i]])
+
+
+   Lcc=Lcc+ comp_class_1 
+  
+  
+
+  t2=time.time() 
+  #############################################################################
+  #Computing intersting_boxes= {box in boxes[0] with box has at least three neighbors  in 2D}#
+  #intersting_boxes is equivalent to L in Marc's Algorithm
+  #############################################################################
+
+  ###############################################################################################################################
+  #For every two distinct connected components of Lcc, we check if they intersect in 2D, if so we compute the ball system ans solve it  #
+  ################################################################################################################################ 
+
+  Solutions=[[],[]] # list of two lists, certified and uncertified solutions
+  for c1_index in range(len(Lcc)-1):
+    for c2_index in range(c1_index+1,len(Lcc)):
+      ball_start=time.time()
+      
+      if d.components_intersection(Lcc[c1_index],Lcc[c2_index] ) == True:
+        
+        ####################################################################
+        ##Now we discuss several cases depending on how far  0 from t is#####
+        #################################################################### 
+        uni=[]
+        for box in Lcc[c1_index]+Lcc[c2_index] :
+            uni = d.box_union(uni,box)
+        t=estimating_t([Lcc[c1_index],Lcc[c2_index]]); t1p = d.ftconstructor(t[0],t[1]); t=[float(t1p.lower()),float(t1p.upper())];
+        # t contains 0  
+        if  t[0] <= 0<= t[1]   :
+          t1po=[t[0],min(threshold,t[1])]
+          B_Ball=uni[:] +[[-1-eps_min,+1+eps_min]]*(n-2) +[t1po]
+      
+          if n==3:
+            B_Ball[n]=[0.999,1.001]
+          B_Ball= check_for_pre(B_Ball) 
+          if is_poly:
+            Ball_generating_system(Ball_P,B_Ball,X,eps_min)
+            os.system("ibexsolve   --eps-max="+ str(eps_max)+"  --eps-min="+ str(eps_min) + " -s  eq.txt  > output.txt")
+            res=computing_boxes()
+          else:
+            res=cusp_Ball_solver(P,B_Ball,X,eps_min=eps_min,eps_max=eps_max)
+          Sol=res[:2]
+          tree_size_ball += res[len(res)-1]
+          if Sol[0] != "Empty" and Sol !=[[],[]]:
+            Solutions[0]=Solutions[0]+Sol[0] 
+            Solutions[1]=Solutions[1]+Sol[1] 
+          elif Sol == [[],[]]   and d.width(uni[:2]) > eps_min:
+                
+                new_B=B_Ball[:n]
+                res=enclosing_curve(system,new_B,X,eps_max=0.1*eps_max, eps_min=eps_min)
+                resul=enclosing_singularities(system,res,new_B,X,eps_max=eps_max,eps_min=eps_min)
+                Solutions[0] += resul[0]+resul[1] 
+                Solutions[1] += resul[2]
+                boxes[1] += res[1]
+                tree_size_ball += resul[3]
+                tree_size_curve +=resul[4]
+          elif   Sol == [[],[]]   and d.width(uni) <= eps_min:   
+                Solutions[1].append(B_Ball)
+        
+          if t[1] > threshold:
+           
+           t2pos=[threshold,t[1]]
+           r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr([Lcc[c1_index],Lcc[c2_index]])]
+           B_Ball=uni[:2] +r[:n-2]+[[-1-eps_min,+1+eps_min]]*(n-2) +[t2pos] 
+           if n==3:
+            B_Ball[n]=[0.999,1.001]
+         
+           Ball_generating_system(Ball_P,B_Ball,X,eps_min)
+           os.system("ibexsolve   --eps-max="+ str(eps_max)+"  --eps-min="+ str(eps_min) + " -s  eq.txt  > output.txt")
+           res=computing_boxes()
+           Sol=res[:2]
+           tree_size_ball += res[len(res)-1]
+           if Sol[0] != "Empty" and Sol !=[[],[]]:
+            Solutions[0]=Solutions[0]+Sol[0] 
+            Solutions[1]=Solutions[1]+Sol[1]
+           elif Sol == [[],[]]   and d.width(uni[:2]) > eps_min:
+                new_B=uni
+                res=enclosing_curve(system,new_B,X,eps_max=0.1*eps_max, eps_min=eps_min)
+                resul=enclosing_singularities(system,res,new_B,X,eps_max=eps_max,eps_min=eps_min)
+                Solutions[0] += resul[0]+resul[1] 
+                Solutions[1] += resul[2]
+                boxes[1] += res[1]
+                tree_size_ball += resul[3]
+                tree_size_curve +=resul[4]
+           elif   Sol == [[],[]]   and d.width(uni[:2]) <= eps_min:   
+                Solutions[1].append(B_Ball)         
+          
+        # t does not contain 0   but close enough       
+        elif t[1]< threshold :
+          
+          r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr([Lcc[c1_index],Lcc[c2_index]])]
+          B_Ball=uni[:2] +r[:] +[t] 
+          if n==3:
+            B_Ball[n]=[0.999,1.001]
+          B_Ball= check_for_pre(B_Ball)
+          if is_poly:
+            Ball_generating_system(Ball_P,B_Ball,X,eps_min)
+            os.system("ibexsolve   --eps-max="+ str(eps_max)+"  --eps-min="+ str(eps_min) + " -s  eq.txt  > output.txt")
+            res=computing_boxes()
+          else:
+            res=cusp_Ball_solver(P,B_Ball,X,eps_min=eps_min,eps_max=eps_max)
+          Sol=res[:2]
+          tree_size_ball += res[len(res)-1]
+          if Sol[0] != "Empty" and Sol !=[[],[]]:
+            Solutions[0]=Solutions[0]+Sol[0] 
+            Solutions[1]=Solutions[1]+Sol[1] 
+          elif Sol == [[],[]]   and d.width(uni[:2]) > eps_min:
+                
+                new_B=uni
+                res=enclosing_curve(system,new_B,X,eps_max=0.1*eps_max, eps_min=eps_min)
+                resul=enclosing_singularities(system,res,new_B,X,eps_max=eps_max,eps_min=eps_min)
+                Solutions[0] += resul[0]+resul[1] 
+                Solutions[1] += resul[2]
+                boxes[1] += res[1]
+                tree_size_ball += resul[3]
+                tree_size_curve +=resul[4]
+          elif   Sol == [[],[]]   and d.width(uni[:2]) <= eps_min:   
+                Solutions[1].append(B_Ball)  
+         # t is a away from 0
+        elif t[0]> threshold or  (t[0] < threshold and t[1] > threshold ):
+           r=[ [float(ri[0]),float(ri[1])] for ri in  estimating_yandr([Lcc[c1_index],Lcc[c2_index]])]
+           B_Ball=uni[:2] +r[:] +[t] 
+           if n==3:
+            B_Ball[n]=[0.999,1.001]
+           B_Ball= check_for_pre(B_Ball)
+           Ball_generating_system(Ball_P,B_Ball,X,eps_min)
+           os.system("ibexsolve   --eps-max="+ str(eps_max)+"  --eps-min="+ str(eps_min) + " -s  eq.txt  > output.txt")
+           ibex_output=computing_boxes()
+           Sol=ibex_output[:2]
+           tree_size_ball += ibex_output[len(ibex_output)-1]
+           if Sol[0] != "Empty" and Sol != [[],[]] :
+            Solutions[0]=Solutions[0]+Sol[0] 
+            Solutions[1]=Solutions[1]+Sol[1]
+           elif Sol == [[],[]]   and d.width(uni[:2]) > eps_min:
+                new_B=uni
+                res=enclosing_curve(system,new_B,X,eps_max=0.1*eps_max, eps_min=eps_min)
+                resul=enclosing_singularities(system,res,new_B,X,eps_max=eps_max,eps_min=eps_min)
+                Solutions[0] += resul[0]+resul[1] 
+                Solutions[1] += resul[2]
+                boxes[1] += res[1]
+                tree_size_ball += resul[3]
+                tree_size_curve +=resul[4]
+           elif   Sol == [[],[]]   and d.width(uni[:2]) <= eps_min:   
+                Solutions[1].append(B_Ball)        
+         
+      ball_end=time.time()
+      time_ball.append(ball_end-ball_start)   
+
+  ####################################################################################################
+  #Now we have all ball solutions. We check whether all of them satisfy Conditions alpha2 and alpha3 
+  ####################################################################################################
+  com_start=time.time()
+  nodes=[]
+  Sols_with_0in_t=[]
+  checker=projection_checker(Solutions[0])
+  Solutions[1]= Solutions[1] +checker[1]
+  Solutions[0]=[Bi for Bi in checker[0] if Bi[2*n-2][1] >= 0   ] 
+  for solution in Solutions[0] :
     if 0 >= solution[2*n-2][0] and 0 <= solution[2*n-2][1]:
-      cups_or_smallnodes.append(solution)
+      Sols_with_0in_t.append(solution)
     else:
       nodes.append(solution) 
+  com_end=time.time()
+  time_combinatorics.append(com_end-com_start)  
 
-  return [nodes,cups_or_smallnodes, uncer_Solutions ]    
 
-System="system.txt" 
-Box=[[-3.14,3.14],[-3.14,3.14],[-3, 3]]#, [-15, 15]]
+  if info ==True:
+   print("tree_size_curve: ",tree_size_curve )
+   print("tree_size_ball: ",tree_size_ball )
 
-Box=[[-1.01,1.03],[-1.03,1.03],[0,3]]
-#Box=[[-15, 15], [-13.2, 13.2],[-3.14,3.14],[-3.14,3.14]]
-#Box=[[0.215,3.219],[0.920,1929],[-16, 16],[-13,13]] #[-12.3, 12.18]]
-#Box=[[-1.21,1.13],[-1.23,1.13],[2.1,8.3]]
+
+   print("Timing of solving Ball system  : ", sum(time_ball))
+   print("Timing of combinatorial steps: ", t2-t1)
+  return [nodes,Sols_with_0in_t, Solutions[1], tree_size_ball, tree_size_curve]    
+"""
+#robot(9,3,5.1,7.1,5)   robot 1 
+#robot(8,5,8,5,15) robot 2     
+robot(8,5,8,5,5) # robot 3   
+robot(5,5,5,5,5) #robot 4 
+robot(10,8,7,8,2) # robot 5 
+robot(10,8,7,8,6) # robot 6 
+
+robot(10,6,2,4,8)"""
+
+
+
+System="exp2-test2.txt" 
+System2="3-RRR2.txt" 
+#System="serial.txt" 
+Box = [[-1, 4], [-1, 4],[-4.8, -1.4]] #exp1
+"""
+
+
+
+  #exp3 
+Box=[[-50,50]]*2+[[-0.05,0.05]]+[[-3.14,3.14]]*3
+
+Box=[[-1,4]]*2+[[-4.8,-1.4]]
+#Box=[[2.8,3.1]]*2+[[-4.8,-1.4]]
+"""
+Box=[[-1,0.2],[-0.2,1.4]]+[[-10,10]]*2   #exp4
+#Box=[[-1, 0], [-0.1, 3.5] , [-20, 20],[-10, 10]] #exp3
+Box=[[-1.5,1.5]]*3
+#Box=[[0.9,1.4]]*2+[[-2.5,2.5]]*2  #haas 
+
+
+
 X=[sp.Symbol("x"+str(i)) for i in range(1,4)]
 
-boxes =enclosing_curve(System,Box,X,eps=0.1)
-plotting_3D(boxes[0],Box);input()
-nodes, cups_or_smallnodes,uncer_Solutions=enclosing_singularities(System,boxes,Box,X)
 
-#plotting the singularities
-ploting_boxes(boxes[0],boxes[1] ,B=Box[:2], nodes = nodes,x=0.17, cusps= cups_or_smallnodes,uncer_Solutions=uncer_Solutions,color="blue" ,Legend=True)
+boxes =enclosing_curve(System,Box,X,eps_max=0.1 ,eps_min=1e-7)
+#plotting_3D([Bi[:3] for Bi in boxes[0]],Box=Box)
+#ploting_boxes(boxes[0],boxes[1],B=Box);input()
+
+#ploting_boxes(boxes[0],boxes[1]);input()
+#ploting_boxes(boxes[0],boxes2[1],var=[2,3]);input()
 
 
-##################################
-#Declaring parameters #######
-##################################
-"""System="system.txt" 
-Box=[[-5,15],[-15,15],[-3.14,3.14],[-3.14,3.14]]
-X=[sp.Symbol("x"+str(i)) for i in range(1,5)]
+#print("unk",boxes[1]);input()
+nodes,Sols_with_0in_t,uncer_Solutions,tree_size_ball,tree_size_curve=enclosing_singularities(System,boxes,Box,X,eps_max=0.1 ,eps_min=1e-7,threshold=1e-2, info=True)
 
-##################################
-#Applying the function #######
-##################################
-boxes =enclosing_curve(System,Box,X)
+print()
+print("certified and uncertified enclosing boxes: "  , len(boxes[0]),len(boxes[1]))
+print("certified and uncertified ball solutions: ", len(nodes),len(uncer_Solutions ))
 
-"""
+#pprint(sp.Matrix(nodes+Sols_with_0in_t))
+for i in range(len(nodes)-1):
+  for j in range(i+1,len(nodes)):
+    if d.boxes_intersection(nodes[i][:2],nodes[j][:2]):
+      print(nodes[i][:2]); input()  
+
+ploting_boxes(boxes[0],boxes[1] ,B=Box[:2], nodes = nodes,x=0.1, cusps= Sols_with_0in_t,uncer_Solutions=uncer_Solutions,Legend=True)
+
