@@ -532,7 +532,7 @@ def computing_boxes():
     except ValueError:
           pass 
   if len(cer)==0:
-    return [[],uncer,0] 
+    return [[],uncer,tree_size] 
   return [cer,uncer,tree_size]        
 def enclosing_curve(system,B,X,eps_min=0.1,eps_max=0.1, info=False): 
   start_enc=time.time()
