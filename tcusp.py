@@ -199,7 +199,7 @@ def Cauchy_form_poly(P,X,var=[0,1]):
     D_ser=[seri.subs(t,sp.sqrt(t)) for seri in D_ser]
     return P_pluse
 def Ball_cusp_gen(equations,B_Ball,X,var=[0,1]):
-    B_Ball[4]=[B_Ball[4][0]-0.5,B_Ball[4][1]+0.5]
+    
     n=len(X)
     P_pluse=Cauchy_form_poly(equations,X,var)
     t=sp.Symbol("t")
